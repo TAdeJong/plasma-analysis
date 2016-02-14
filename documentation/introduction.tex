@@ -2,7 +2,7 @@
 \usepackage{amsmath, amssymb, textcomp}
 \usepackage{graphicx}
 \usepackage{cite}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \usepackage[section]{placeins}
 
 \newcommand{\Part}[3][ ]{\ensuremath{\frac{\partial^{#1} #2}{{\partial #3}^{#1}}}}
@@ -22,7 +22,7 @@ To implement the code we were inspired by Marek Fiser.\footnote{\url{http://www.
 The dataset we use is a set of $256^3$ points in a regular rectangular grid for which the $(x,y,z)$ components of the magnetic field are given. This sort of dataset has a strong correspondence with a 3D texture on a GPU. Using this representation in CUDA has several advantages, of which the hardware trilinear interpolation is the most notable.
 \section{Coordinate systems}
 Troughout the analysis we use three coordinate systems: cartesian $9x,y,z)$, spherical $(r,\theta,\phi)$ and toroidal $(s,\alpha, \beta)$. We use cartesian as the original dataset is cartesian and this yields the simplest line integrators. For the analysis it will however be beneficial to think in toroidal coordinates:
-\[(s,\alpha,\beta)\in ([0,R_max],[0,2\pi],[0,2\pi])\]
+\[(s,\alpha,\beta)\in ([0,r_{max}],[0,2\pi],[0,2\pi])\]
 where $\alpha$ is the angle in the horizontal plane, corresponding to $\theta$ in spherical coordinates, $s$ is the (shortest) distance to the core of the torus, and $\beta$ is the remaining angle on the torus, in the $r,\phi$-plane.
 \subsection{Conversion}
 To calculate the toroidal coordinates, we first need to know the location of the core of the torus. To do this, we can first convert the coordinates of a (set of) field line(s) to spherical, after which we can take the mean $r$ and $\phi$. So this yields a radius to the core of the torus $r_t$ and an elevation $\phi_t$. It might be beneficial to eliminate this elevation by translating the original system over the $z$-axis such that the elevation is equal to zero.
