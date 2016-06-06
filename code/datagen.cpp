@@ -3,14 +3,13 @@
 
 using namespace std;
 
+struct float3 {
+	float x,y,z;
+};
 
 const int N = 256;
 
-struct vec {
-	float x, y, z;
-};
-
-void datagen (vec*** data) {
+void datagen (float3*** data) {
 	float spacing = 0.0245436930189;
 	float origin = -3.12932085991;
 	for (int i=0; i < N; i++) {
@@ -25,10 +24,10 @@ void datagen (vec*** data) {
 }
 
 int main () {
-	vec*** data; 
-	data = (vec***) malloc(N*sizeof(vec**));
-	data[0] = (vec**) malloc(N*N*sizeof(vec*));
-	data[0][0] = (vec*) malloc(N*N*N*sizeof(vec));
+	float3*** data; 
+	data = (float3***) malloc(N*sizeof(float3**));
+	data[0] = (float3**) malloc(N*N*sizeof(float3*));
+	data[0][0] = (float3*) malloc(N*N*N*sizeof(float3));
 	for (int i=1; i < N; i++) {
 		data[i] = (data[0] + i*N);
 	}
