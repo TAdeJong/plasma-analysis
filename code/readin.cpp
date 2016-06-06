@@ -11,9 +11,10 @@ using namespace std;
 int main(int argc, char** argv) {
 	
 	ofstream floattest;
-	floattest.open(argv[1]);
+	floattest.open(argv[1], ios::out | ios::binary);
 	float datapoint = 0.001;
-	floattest << datapoint;
+//	floattest << datapoint;
+	floattest.write( reinterpret_cast<const char*>( &datapoint ), sizeof (float));
 	floattest.close();
 
 	int numberoffloats = 1;
