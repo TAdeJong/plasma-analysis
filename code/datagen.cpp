@@ -1,3 +1,5 @@
+/*This file creates a circular test vector field in the 3D float3-array 'data'*/
+
 #include <iostream>
 #include <stdlib.h>
 
