@@ -6,6 +6,9 @@ texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 
 const int N = 256;
 
+float spacing = 0.0245436930189;
+float origin = -3.12932085991;
+
 
 //Definitions of vectortype operators
 __device__ float3 operator+(const float3 &a, const float3 &b) {
@@ -34,11 +37,11 @@ inline __device__ float4 tex3D(texture<float4, 3, cudaReadModeElementType> tex, 
 
 //Do 1 RK4 step.
 __device__ float4 RK4step(float4 loc, double dt ) {
-	float3 loc3d = make_float3(loc);
-	float4 k1 = tex3D(dataTex, loc3d); // of moet ik hier loc.x,loc.y,loc.z meegeven?
-	float4 k2 = tex3D(dataTex, loc3d+dt*0.5*make_float3(k1));
-	float4 k3 = tex3D(dataTex, loc3d+dt*0.5*make_float3(k2));
-	float4 k4 = tex3D(dataTex, loc3d+dt*make_float3(k3));
+	float3 loc3d = make_float3((loc.x-origin)/spacing,(loc.y-origin)/spacing,(loc.z-origin)/spacing);
+	float4 k1 = tex3D(dataTex, loc3d);
+	float4 k2 = tex3D(dataTex, loc3d+(dt*0.5/spacing)*make_float3(k1));
+	float4 k3 = tex3D(dataTex, loc3d+(dt*0.5/spacing)*make_float3(k2));
+	float4 k4 = tex3D(dataTex, loc3d+(dt/spacing)*make_float3(k3));
 	return dt/6.0*(k1 + 2.0*(k2 + k3) + k4);
 }
 
@@ -53,8 +56,6 @@ __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float
 }
 
 void datagen (float4*** data) {
-	float spacing = 0.0245436930189;
-	float origin = -3.12932085991;
 	for (int i=0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			for (int k = 0; k < N; k++) {
@@ -106,7 +107,7 @@ int main(void) {
 	int cores = 1;
 	int blocks = 1;
 	float dt = 1/2.0;
-	float4 startloc = {200,125,128,128};
+	float4 startloc = {1,-1,0,0};
 	checkCudaErrors(cudaMalloc(&d_lines,blocks*cores*steps*sizeof(float4)));
 
 	h_lines = (float4*) malloc(blocks*cores*steps*sizeof(float4));
