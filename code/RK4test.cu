@@ -7,17 +7,6 @@ texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 const int N = 256;
 
 
-
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-	if (code != cudaSuccess) 
-    {
-        fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-    if (abort) exit(code);
-    }
-}
-
 //Definitions of vectortype operators
 __device__ float3 operator+(const float3 &a, const float3 &b) {
 	return make_float3(a.x+b.x, a.y+b.y, a.z+b.z);
