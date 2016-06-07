@@ -6,8 +6,8 @@ texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 
 const int N = 256;
 
-float spacing = 0.0245436930189;
-float origin = -3.12932085991;
+const float spacing = 0.0245436930189;
+const float origin = -3.12932085991;
 
 
 //Definitions of vectortype operators
