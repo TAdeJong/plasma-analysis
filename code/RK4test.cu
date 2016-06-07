@@ -35,19 +35,22 @@ inline __device__ float4 tex3D(texture<float4, 3, cudaReadModeElementType> tex, 
 	return tex3D(tex, a.x,a.y,a.z);
 }
 
-//Do 1 RK4 step.
+inline __device__ float3 Smiet2Tex(float4 locSmiet) {
+	return make_float3((locSmiet.x-origin)/spacing,(locSmiet.y-origin)/spacing,(locSmiet.z-origin)/spacing);
+}
+
+//Do 1 RK4 step. Return een waarde in Smietcoords, input in Smietcoords
 __device__ float4 RK4step(float4 loc, double dt ) {
-	float3 loc3d = make_float3((loc.x-origin)/spacing,(loc.y-origin)/spacing,(loc.z-origin)/spacing);
-	float4 k1 = tex3D(dataTex, loc3d);
-	float4 k2 = tex3D(dataTex, loc3d+(dt*0.5/spacing)*make_float3(k1));
-	float4 k3 = tex3D(dataTex, loc3d+(dt*0.5/spacing)*make_float3(k2));
-	float4 k4 = tex3D(dataTex, loc3d+(dt/spacing)*make_float3(k3));
+	float3 loc3dTex = Smiet2Tex(loc);
+	float4 k1 = tex3D(dataTex, loc3dTex);
+	float4 k2 = tex3D(dataTex, loc3dTex+(dt*0.5/spacing)*make_float3(k1));
+	float4 k3 = tex3D(dataTex, loc3dTex+(dt*0.5/spacing)*make_float3(k2));
+	float4 k4 = tex3D(dataTex, loc3dTex+(dt/spacing)*make_float3(k3));
 	return dt/6.0*(k1 + 2.0*(k2 + k3) + k4);
 }
 
 __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 loc) {
-	float3 loc3d = make_float3(loc);
-	lineoutput[0] = tex3D(dataTex,loc3d);
+	lineoutput[0] = tex3D(dataTex, make_float3(127.5,127.5,0));
 	for (unsigned int i=1; i < steps; i++) {
 		loc = loc + RK4step(loc,dt);
 		lineoutput[i] = loc;
@@ -55,12 +58,23 @@ __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float
 	return;
 }
 
+__global__ void readline(float4* lineoutput, unsigned int steps, float4 loc) {
+	float3 loc3d = make_float3(loc);
+	for (unsigned int i=0; i < steps; i++) {
+		lineoutput[i] = tex3D(dataTex, Smiet2Tex(loc));
+		loc.x+=spacing;
+	}
+	return;
+}
+
+
 void datagen (float4*** data) {
+	//data[z][y][x]
 	for (int i=0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			for (int k = 0; k < N; k++) {
-				(data[i][j][k]).x = origin + spacing*j;
-				(data[i][j][k]).y = - (origin + spacing*i);
+				(data[i][j][k]).x = - (origin + spacing*j);
+				(data[i][j][k]).y = (origin + spacing*k);
 				(data[i][j][k]).z = 0;
 				(data[i][j][k]).w = 0;
 			}
@@ -103,18 +117,21 @@ int main(void) {
 	std::cout << 5 << std::endl;
 	checkCudaErrors(cudaBindTextureToArray(dataTex, dataArray, channelDesc));
 	float4 *d_lines, *h_lines;
-	int steps = 400;
+//	double time = 3.141592653*2.0;
+	int steps = N;
 	int cores = 1;
 	int blocks = 1;
-	float dt = 1/2.0;
-	float4 startloc = {1,-1,0,0};
+	float dt = spacing;
+	float4 startloc = {origin,0,0,0};
+	std::cout << hostvfield[127][127][127].x << std::endl;
 	checkCudaErrors(cudaMalloc(&d_lines,blocks*cores*steps*sizeof(float4)));
 
 	h_lines = (float4*) malloc(blocks*cores*steps*sizeof(float4));
 	RK4line<<<cores,blocks>>>(d_lines, dt, steps, startloc);
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, blocks*cores*steps*sizeof(float4), cudaMemcpyDeviceToHost));
-	for(unsigned int i=0; i< steps; i++) {
-		std::cout << "x= " << h_lines[i].x << "; y= "<< h_lines[i].y << std::endl;
+	for(unsigned int i=0; i<3; i++) {
+		std::cout << "x= " << h_lines[i].x << "; y= "<< h_lines[i].y << " "<< h_lines[i].x*h_lines[i].x+h_lines[i].y*h_lines[i].y;
+		std::cout << "x= " << hostvfield[0][0][i].x << "; y= "<< hostvfield[0][0][i].y << " "<< std::endl;
 	}
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
