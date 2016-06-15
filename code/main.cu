@@ -5,6 +5,7 @@
 #include "coordfunctions.h"
 #include "integration.h"
 
+//'Global' texture, declared as an external texture in integration.cu. Stores data on the device.
 texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 
 /*	Generates a circular vectorfield around the origin for testing purposes.

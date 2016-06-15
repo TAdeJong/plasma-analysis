@@ -1,3 +1,5 @@
+/* Contains all functions relating to line integration (RK4 and a testfunction) */
+
 #ifndef _INTEGRATION_H_
 #define _INTEGRATION_H_
 
