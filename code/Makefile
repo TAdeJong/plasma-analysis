@@ -7,3 +7,5 @@ all: RK4test
 
 RK4test: RK4test.cu
 	$(CC) $(IFLAGS) RK4test.cu -o RK4test
+
+clean: rm *.o RK4test

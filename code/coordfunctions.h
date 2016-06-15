@@ -32,8 +32,8 @@ inline __device__ float4 tex3D(texture<float4, 3, cudaReadModeElementType> tex, 
 	return tex3D(tex, a.x,a.y,a.z);
 }
 
-inline __device__ float3 Smiet2Tex(float4 locSmiet) {
-	return make_float3((locSmiet.x-origin)/spacing,(locSmiet.y-origin)/spacing,(locSmiet.z-origin)/spacing);
+inline __device__ __host__ float3 Smiet2Tex(float4 locSmiet) {
+	return make_float3((locSmiet.x-origin)/spacing+0.5,(locSmiet.y-origin)/spacing+0.5,(locSmiet.z-origin)/spacing+0.5);
 }
 
 #endif
