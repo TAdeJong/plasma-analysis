@@ -8,25 +8,10 @@
 
 using namespace std;
 
-int main(int argc, char** argv) {
+void readdata(float4* datapointer, int size, char* filename) {
+	int filedescriptor = open(filename, O_RDONLY, 0);
 	
-	ofstream floattest;
-	floattest.open(argv[1], ios::out | ios::binary);
-	float datapoint = 0.001;
-//	floattest << datapoint;
-	floattest.write( reinterpret_cast<const char*>( &datapoint ), sizeof (float));
-	floattest.close();
-
-	int numberoffloats = 1;
-	int filedescriptor = open(argv[1], O_RDONLY, 0);
-	
-	float* Data = (float*)mmap(NULL, numberoffloats*sizeof(float), PROT_READ, MAP_FILE | MAP_PRIVATE, filedescriptor, 0);
+	datapointer = (float4*)mmap(NULL, numberoffloats*sizeof(float4), PROT_READ, MAP_FILE | MAP_PRIVATE, filedescriptor, 0);
 	assert(Data != MAP_FAILED);
-
-	for (int i = 0; i < numberoffloats; i++) {
-		cout << Data[i] << " ";
-	}
-	cout << endl;
-
-	return 0;
+	return;
 }
