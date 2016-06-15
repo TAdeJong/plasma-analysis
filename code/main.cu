@@ -6,6 +6,10 @@
 texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 
 
+/*	Generates a circular vectorfield around the origin for testing purposes.
+	Note the order of the indices - the first index corresponds to the z coordinate,
+	the middle to y and the last to x.
+*/
 void datagen (float4*** data) {
 	//data[z][y][x]
 	for (int i=0; i < N; i++) {
