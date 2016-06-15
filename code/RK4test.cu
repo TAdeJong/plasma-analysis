@@ -124,7 +124,7 @@ int main(void) {
 	int cores = 1;
 	int blocks = 1;
 	float dt = time/N;
-	float4 startloc = {origin,0,0,0};
+	float4 startloc = {0,0,0,0};
 	std::cout << hostvfield[127][127][127].x << std::endl;
 	checkCudaErrors(cudaMalloc(&d_lines,blocks*cores*steps*sizeof(float4)));
 
@@ -132,7 +132,7 @@ int main(void) {
 	RK4line<<<cores,blocks>>>(d_lines, dt, steps, startloc);
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, blocks*cores*steps*sizeof(float4), cudaMemcpyDeviceToHost));
 	for(unsigned int i=0; i<steps; i++) {
-		std::cout << "x= " << h_lines[i].x << "; y= "<< h_lines[i].y << " "<< h_lines[i].x*h_lines[i].x+h_lines[i].y*h_lines[i].y;
+		std::cout << "x= " << h_lines[i].x << "; y= "<< h_lines[i].y << " "<< h_lines[i].x*h_lines[i].x+h_lines[i].y*h_lines[i].y << std::endl;
 	}
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
