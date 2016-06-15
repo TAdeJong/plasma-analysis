@@ -50,7 +50,7 @@ __device__ float4 RK4step(float4 loc, double dt ) {
 }
 
 __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 loc) {
-	lineoutput[0] = tex3D(dataTex, Smiet2Tex(loc));
+	lineoutput[0] = loc;
 	for (unsigned int i=1; i < steps; i++) {
 		loc = loc + RK4step(loc,dt);
 		lineoutput[i] = loc;
@@ -119,8 +119,8 @@ int main(void) {
 //	std::cout << 5 << std::endl;
 	checkCudaErrors(cudaBindTextureToArray(dataTex, dataArray, channelDesc));
 	float4 *d_lines, *h_lines;
-	double time = 3.141592653*2.0;
-	int steps = 1000;
+	double time = 3.141592653*6.0;
+	int steps = 100000;
 	int cores = 1;
 	int blocks = 1;
 	float dt = time/N;
@@ -133,8 +133,8 @@ int main(void) {
 	h_lines = (float4*) malloc(blocks*cores*steps*sizeof(float4));
 	RK4line<<<cores,blocks>>>(d_lines, dt, steps, startloc);
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, blocks*cores*steps*sizeof(float4), cudaMemcpyDeviceToHost));
-	for(unsigned int i=0; i<3; i++) {
-		std::cout << "x= " << h_lines[i].x << "; y= "<< h_lines[i].y << " "<< h_lines[i].x*h_lines[i].x+h_lines[i].y*h_lines[i].y << std::endl;
+	for(unsigned int i=0; i<100; i++) {
+		std::cout << "x= " << h_lines[i*steps/100].x << "; y= "<< h_lines[i*steps/100].y << " "<< h_lines[i*steps/100].x*h_lines[i*steps/100].x+h_lines[i*steps/100].y*h_lines[i*steps/100].y << std::endl;
 	}
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
