@@ -73,28 +73,29 @@ int main(void) {
 	float dt = time/steps;
 
 	dim3 gridsize(1,1);
-	dim3 blocksize(1,1);
-	int blocks = gridsize.x * gridsize.y;
-	int cores = blocksize.x * blocksize.y;
-	float4 startloc = {0,0,0,0};
+	dim3 blocksize(8,8);
+	int threadcount = gridsize.x*gridsize.y*blocksize.x*blocksize.y;
+	float4 startloc = {1,0,0,0};
 	float4 xvec = {1,0,0,0};
 	float4 yvec = {0,1,0,0};
 
 	//Allocate space on device to store integration output
-	checkCudaErrors(cudaMalloc(&d_lines,blocks*cores*steps*sizeof(float4)));
+	checkCudaErrors(cudaMalloc(&d_lines, threadcount*steps*sizeof(float4)));
 
 	//Allocate space on host to store integration output
-	h_lines = (float4*) malloc(blocks*cores*steps*sizeof(float4));
+	h_lines = (float4*) malloc(threadcount*steps*sizeof(float4));
 
 	//Integrate the vector field
-	RK4line<<<cores,blocks>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsize);
+	RK4line<<<gridsize,blocksize>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsize);
 
 	//Copy data from device to host
-	checkCudaErrors(cudaMemcpy(h_lines, d_lines, blocks*cores*steps*sizeof(float4), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcount*steps*sizeof(float4), cudaMemcpyDeviceToHost));
 
 	//Print 100 samples from the line
+	int index = 0;
 	for(unsigned int i=0; i<100; i++) {
-		std::cout << "x= " << h_lines[i*steps/100].x << "; y= "<< h_lines[i*steps/100].y << " "<< h_lines[i*steps/100].x*h_lines[i*steps/100].x+h_lines[i*steps/100].y*h_lines[i*steps/100].y << std::endl;
+		index = 2*steps + i*steps/100;
+		std::cout << "x= " << h_lines[index].x << "; y= "<< h_lines[index].y << " "<< h_lines[index].x*h_lines[index].x+h_lines[index].y*h_lines[index].y << std::endl;
 	}
 
 	//Free host pointers
