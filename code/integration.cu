@@ -19,11 +19,16 @@ __device__ float4 RK4step(float4 loc, double dt) {
 	steps number of timesteps, and saves the resulting curve in lineoutput. The w-coordinate
 	of the output is unused.
 */
-__global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 loc) {
-	lineoutput[0] = loc;
+__global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 startloc, float4 xvec, float4 yvec, dim3 gridsize) {
+	dim3 index2D(threadIdx.x + blockIdx.x * blockDim.x, threadIdx.y + blockIdx.y*blockDim.y);
+	float4 dx = (1.0/(gridsize.x*blockDim.x))*xvec;
+	float4 dy = (1.0/(gridsize.y*blockDim.y))*yvec;
+	float4 loc = startloc + index2D.x*dx + index2D.y*dy;
+	int index = index2D.y*(gridsize.x*blockDim.x) + index2D.x;
+	lineoutput[index*steps] = loc;
 	for (unsigned int i=1; i < steps; i++) {
 		loc = loc + RK4step(loc, dt);
-		lineoutput[i] = loc;
+		lineoutput[index*steps + i] = loc;
 	}
 	return;
 }

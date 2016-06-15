@@ -70,10 +70,15 @@ int main(void) {
 	//Set integration parameters (end time, number of steps, etc.)
 	double time = 3.141592653*6.0;
 	int steps = 100000;
-	int cores = 1;
-	int blocks = 1;
 	float dt = time/steps;
-	float4 startloc = {1,0,0,0};
+
+	dim3 gridsize(1,1);
+	dim3 blocksize(1,1);
+	int blocks = gridsize.x * gridsize.y;
+	int cores = blocksize.x * blocksize.y;
+	float4 startloc = {0,0,0,0};
+	float4 xvec = {1,0,0,0};
+	float4 yvec = {0,1,0,0};
 
 	//Allocate space on device to store integration output
 	checkCudaErrors(cudaMalloc(&d_lines,blocks*cores*steps*sizeof(float4)));
@@ -82,7 +87,7 @@ int main(void) {
 	h_lines = (float4*) malloc(blocks*cores*steps*sizeof(float4));
 
 	//Integrate the vector field
-	RK4line<<<cores,blocks>>>(d_lines, dt, steps, startloc);
+	RK4line<<<cores,blocks>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsize);
 
 	//Copy data from device to host
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, blocks*cores*steps*sizeof(float4), cudaMemcpyDeviceToHost));
