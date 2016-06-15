@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <iostream>
 #include <helper_cuda.h>
+#include "constants.h"
 #include "coordfunctions.h"
-
-texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
+#include "integration.h"
 
 
 /*	Generates a circular vectorfield around the origin for testing purposes.
@@ -70,7 +70,7 @@ int main(void) {
 	int steps = 100000;
 	int cores = 1;
 	int blocks = 1;
-	float dt = time/N;
+	float dt = time/steps;
 	float4 startloc = {1,0,0,0};
 
 	//Allocate space on device to store integration output
