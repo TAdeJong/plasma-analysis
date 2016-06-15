@@ -15,9 +15,12 @@ __device__ float4 RK4step(float4 loc, double dt) {
 }
 
 
-/*	Integrates (RK4) the vectorfield dataTex with initial value loc and timestep dt over
+/*	Integrates (RK4) the vectorfield dataTex with timestep dt over
 	steps number of timesteps, and saves the resulting curve in lineoutput. The w-coordinate
 	of the output is unused.
+	The parallelization assignes to each thread an initial value in the rectangle
+	with corner startloc and sides xvec and yvec (modulo off-by-one). The output
+	array lineoutput is linear, and consists of blocks of size 'steps' each containing 1 line
 */
 __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 startloc, float4 xvec, float4 yvec, dim3 gridsize) {
 	dim3 index2D(threadIdx.x + blockIdx.x * blockDim.x, threadIdx.y + blockIdx.y*blockDim.y);
