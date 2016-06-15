@@ -35,8 +35,8 @@ inline __device__ float4 tex3D(texture<float4, 3, cudaReadModeElementType> tex, 
 	return tex3D(tex, a.x,a.y,a.z);
 }
 
-inline __device__ float3 Smiet2Tex(float4 locSmiet) {
-	return make_float3((locSmiet.x-origin)/spacing,(locSmiet.y-origin)/spacing,(locSmiet.z-origin)/spacing);
+inline __device__ __host__ float3 Smiet2Tex(float4 locSmiet) {
+	return make_float3((locSmiet.x-origin)/spacing+0.5,(locSmiet.y-origin)/spacing+0.5,(locSmiet.z-origin)/spacing+0.5);
 }
 
 //Do 1 RK4 step. Return een waarde in Smietcoords, input in Smietcoords
@@ -124,7 +124,7 @@ int main(void) {
 	int cores = 1;
 	int blocks = 1;
 	float dt = time/N;
-	float4 startloc = {0,0,0,0};
+	float4 startloc = {1,0,0,0};
 	float3 locSmiet = Smiet2Tex(startloc);
 	std::cout << "Starting point in texture coordinates: x=" << locSmiet.x << ", y=" << locSmiet.y << ", z=" << locSmiet.z << std::endl;
 //	std::cout << hostvfield[127][127][127].x << std::endl;
