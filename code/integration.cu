@@ -2,8 +2,10 @@
 #include "constants.h"
 #include "integration.h"
 
+extern texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
+
 //Do 1 RK4 step. Return een waarde in Smietcoords, input in Smietcoords
-__device__ float4 RK4step(float4 loc, double dt ) {
+__device__ float4 RK4step(float4 loc, double dt) {
 	float3 loc3dTex = Smiet2Tex(loc);
 	float4 k1 = tex3D(dataTex, loc3dTex);
 	float4 k2 = tex3D(dataTex, loc3dTex+(dt*0.5/spacing)*make_float3(k1));
@@ -15,7 +17,7 @@ __device__ float4 RK4step(float4 loc, double dt ) {
 __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 loc) {
 	lineoutput[0] = loc;
 	for (unsigned int i=1; i < steps; i++) {
-		loc = loc + RK4step(loc,dt);
+		loc = loc + RK4step(loc, dt);
 		lineoutput[i] = loc;
 	}
 	return;

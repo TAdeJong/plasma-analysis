@@ -5,6 +5,7 @@
 #include "coordfunctions.h"
 #include "integration.h"
 
+texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 
 /*	Generates a circular vectorfield around the origin for testing purposes.
 	Note the order of the indices - the first index corresponds to the z coordinate,
