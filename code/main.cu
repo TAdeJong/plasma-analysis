@@ -86,7 +86,7 @@ int main(void) {
 	h_lines = (float4*) malloc(threadcountRK4*steps*sizeof(float4));
 
 	//Integrate the vector field
-	RK4line<<<gridsize,blocksize>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsizeRK4);
+	RK4line<<<gridsizeRK4,blocksizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsizeRK4);
 
 	//Copy data from device to host
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcountRK4*steps*sizeof(float4), cudaMemcpyDeviceToHost));
