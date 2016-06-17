@@ -72,24 +72,24 @@ int main(void) {
 	int steps = 100000;
 	float dt = time/steps;
 
-	dim3 gridsize(1,1);
-	dim3 blocksize(8,8);
-	int threadcount = gridsize.x*gridsize.y*blocksize.x*blocksize.y;
+	dim3 gridsizeRK4(1,1);
+	dim3 blocksizeRK4(8,8);
+	int threadcountRK4 = gridsizeRK4.x*gridsizeRK4.y*blocksizeRK4.x*blocksizeRK4.y;
 	float4 startloc = {1,0,0,0};
 	float4 xvec = {1,0,0,0};
 	float4 yvec = {0,1,0,0};
 
 	//Allocate space on device to store integration output
-	checkCudaErrors(cudaMalloc(&d_lines, threadcount*steps*sizeof(float4)));
+	checkCudaErrors(cudaMalloc(&d_lines, threadcountRK4*steps*sizeof(float4)));
 
 	//Allocate space on host to store integration output
-	h_lines = (float4*) malloc(threadcount*steps*sizeof(float4));
+	h_lines = (float4*) malloc(threadcountRK4*steps*sizeof(float4));
 
 	//Integrate the vector field
-	RK4line<<<gridsize,blocksize>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsize);
+	RK4line<<<gridsize,blocksize>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsizeRK4);
 
 	//Copy data from device to host
-	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcount*steps*sizeof(float4), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcountRK4*steps*sizeof(float4), cudaMemcpyDeviceToHost));
 
 	//Print 100 samples from the line
 	int index = 0;
