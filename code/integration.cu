@@ -1,7 +1,7 @@
 #include "coordfunctions.h"
 #include "constants.h"
 #include "integration.h"
-
+#include "helper_math.h"
 extern texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 
 //Performs a single RK4 step. Both input and output are in Smietcoordinates

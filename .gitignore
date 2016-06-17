@@ -29,6 +29,7 @@
 
 #machinedependent includedirlink
 code/cudasamples
+code/main
 
 #LaTeXfiles
 documentation/*.aux
