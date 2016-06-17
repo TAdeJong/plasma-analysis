@@ -9,24 +9,23 @@
 	(so each RK4 line will be processed within a single block)
 */
 __device__ float4 origin(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication) {
-	float4 origin = {0,0,0,0};
+	float4 origin = make_float4(0.0);
 	dim3 index2D(threadIdx.x + blockIdx.x * blockDim.x, threadIdx.y + blockIdx.y*blockDim.y);
 	int index = index2D.y*(gridsize.x*blockDim.x) + index2D.x;
 	int threadsperline = blockDim.x*gridsize.x*Blockdim.y*gridsize.y/numberoflines;
 	int rangeperthread = steps/threadsperline;
 	if (blockDim.x*blockDim.y % threadsperline == 0) { //yay
-		for (int i=0; i < rangeperthread; i++) {
+		for (unsigned int i=0; i < rangeperthread; i++) {
 			origin += lineoutput[rangeperthread*index+i];
 		}
-		origin *= (1.0/localrange);
 		communication[index] = origin;
 		__syncthreads();
 		int threadindex = (index - (index % threadsperline));
-		origin = {0,0,0,0};
-		for (int i=0; i < threadsperline; i++) {
+		origin = make_float4(0.0);
+		for (unsigned int i=0; i < threadsperline; i++) {
 			origin += communication[threadindex + i];
 		}
-		origin *= (1.0/threadsperline);
+		origin *= (1.0/steps);
 	} else { //noooo
 		
 	}
@@ -34,7 +33,7 @@ __device__ float4 origin(float4* lineoutput, int steps, dim3 gridsize, int numbe
 }
 
 __device__ float4 normal(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication, float4 origin) {
-	float4 normal = {0,0,0,0};
+	float4 normal = make_float4(0.0)
 	dim3 index2D(threadIdx.x + blockIdx.x * blockDim.x, threadIdx.y + blockIdx.y*blockDim.y);
 	int index = index2D.y*(gridsize.x*blockDim.x) + index2D.x;
 	int threadsperline = blockDim.x*gridsize.x*Blockdim.y*gridsize.y/numberoflines;
