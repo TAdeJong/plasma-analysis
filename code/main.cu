@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <iostream>
 #include <helper_cuda.h>
+#include <iostream>
 #include "constants.h"
 #include "coordfunctions.h"
 #include "integration.h"
@@ -24,6 +24,18 @@ void datagen (float4*** data) {
 			}
 		}
 	}
+}
+
+
+void datawrite (const char* location, int steps, float4* h_lines){ 
+    //write the first streamline to a file. Remember this is 32 bits when reading!
+    FILE *fp;
+    fp = fopen(location, "w");
+    for (unsigned int i = 0; i<steps; i++){   //write only the first streamline
+        fwrite(&h_lines[i], sizeof(float4), 1, fp);
+    }
+    fclose(fp);
+    std::cout<<"streamline written!"<<std::endl;
 }
 
 int main(void) {
@@ -97,11 +109,14 @@ int main(void) {
 		index = 2*steps + i*steps/100;
 		std::cout << "x= " << h_lines[index].x << "; y= "<< h_lines[index].y << " "<< h_lines[index].x*h_lines[index].x+h_lines[index].y*h_lines[index].y << std::endl;
 	}
-
-	//Free host pointers
+    
+    datawrite("../datadir/test.bin", steps, h_lines);
+    
+    //Free host pointers
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
 	free(hostvfield);
+        
 	
 	return 0;
 }
