@@ -91,7 +91,7 @@ __device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int n
 	}
 	return normal;
 }
-
+//Give a third parameter to your kernellaunch for the size of sdata
 __device__ void reducenormal(float4* g_linedata, float4* g_normaldata) {//equivalent to doing the texture-fetch and cross product and applying reducesum
 	extern __shared__ float4 sdata[];
 
