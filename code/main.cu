@@ -26,23 +26,47 @@ void datagen (float4*** data) {
 	}
 }
 
-void dataread (float4* data, const char* filename){
-unsigned int i, j, k;
-unsigned int n_x =120, n_y=0, n_z=0;
-float bla;
-FILE *dfp;
+int dataread (float4* data, const char* filename, float4 &origin){
+	unsigned int i, j, k, datasize;
+	unsigned int n_x =0, n_y=0, n_z=0;
+	char kind[20];
+	char name[20];
+	char type[20];
+	char rstr[80];
+	float4 rspacing;
+	FILE *dfp;
 
-dfp= fopen(filename, "r");
-
-i=fscanf(dfp, "%u", &n_x);
-fscanf(dfp, "%u", &n_y);
-fscanf(dfp, "%lf", &bla);
-    
-std::cout<<"have read thee things from the vtk file! what will they be?"<<std::endl;
-std::cout<<"first is:" << n_x << " and was found so many times " << i<<std::endl;
-std::cout<<"second is:" << n_y << std::endl;
-std::cout<<"looking for lf gives:" << n_z << std::endl;
-
+	dfp= fopen(filename, "r");
+	for(unsigned int i=0; i<4; ++i) {
+		fgets(rstr, 80, dfp);
+		std::cout << rstr;
+	}
+	fscanf(dfp, "%s %u %u %u", rstr, &n_x, &n_y, &n_z);
+	if(!( n_x == 256 && n_y == 256 && n_z ==256)) {
+		std::cout<<"Warning: incorrect " << rstr << " read: expected 256, got: " << n_z << std::endl;
+	}
+	fscanf(dfp, "%s %f %f %f", rstr, &origin.x, &origin.y, &origin.z);
+	fscanf(dfp, "%s %f %f %f", rstr, &rspacing.x, &rspacing.y, &rspacing.z);
+	if(! (rspacing.x == rspacing.y && rspacing.y == rspacing.z)) {
+		std::cout << "Warning: (unsupported) anisotrope spacing read!" << std::endl;
+	}
+	fscanf(dfp, "%s %u", rstr, &datasize);
+	if(datasize != n_x*n_y*n_z) {
+		std::cout<<"Error: " << rstr << "is not equal to n_x*n_y*n_z" << std::endl;
+		return 1;
+	}
+	fscanf(dfp, "%s %s %s", kind, name, type);
+	if(kind != "VECTORS" || name != "bfield" || type != "float") {
+		std::cout << "Error: Incorrect kind, name or type" << std::endl;
+		return 1;
+	}
+	for(unsigned int i=0; i<datasize; ++i) {
+		float datapoint[3] = {0,0,0};
+		fread(datapoint, sizeof(float), 3, dfp);
+		data[i] = make_float4(datapoint[0],datapoint[1],datapoint[2],0);
+	}
+	std::cout << "Data read in was succesfull!" << std::endl;
+	return 0;
 }
 
 
@@ -130,7 +154,7 @@ int main(void) {
 	}
     
 //    datawrite("../datadir/test.bin", steps, h_lines);
-    dataread(hostvfield[0][0], "/home/smiet/pencil_data/2_form/south_m5n2_iso_VF_256/animation16.vtk");
+    dataread(hostvfield[0][0],"test.txt", startloc);
             
     //Free host pointers
 	free(hostvfield[0][0]);
