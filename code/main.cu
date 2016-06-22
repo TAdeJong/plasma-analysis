@@ -26,6 +26,25 @@ void datagen (float4*** data) {
 	}
 }
 
+void dataread (float4* data, const char* filename){
+unsigned int i, j, k;
+unsigned int n_x =120, n_y=0, n_z=0;
+float bla;
+FILE *dfp;
+
+dfp= fopen(filename, "r");
+
+i=fscanf(dfp, "%u", &n_x);
+fscanf(dfp, "%u", &n_y);
+fscanf(dfp, "%lf", &bla);
+    
+std::cout<<"have read thee things from the vtk file! what will they be?"<<std::endl;
+std::cout<<"first is:" << n_x << " and was found so many times " << i<<std::endl;
+std::cout<<"second is:" << n_y << std::endl;
+std::cout<<"looking for lf gives:" << n_z << std::endl;
+
+}
+
 
 void datawrite (const char* location, int steps, float4* h_lines){ 
     //write the first streamline to a file. Remember this is 32 bits when reading!
@@ -110,8 +129,9 @@ int main(void) {
 		std::cout << "x= " << h_lines[index].x << "; y= "<< h_lines[index].y << " "<< h_lines[index].x*h_lines[index].x+h_lines[index].y*h_lines[index].y << std::endl;
 	}
     
-    datawrite("../datadir/test.bin", steps, h_lines);
-    
+//    datawrite("../datadir/test.bin", steps, h_lines);
+    dataread(hostvfield[0][0], "/home/smiet/pencil_data/2_form/south_m5n2_iso_VF_256/animation16.vtk");
+            
     //Free host pointers
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
