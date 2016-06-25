@@ -4,6 +4,7 @@
 #include "constants.h"
 #include "coordfunctions.h"
 #include "integration.h"
+#include "vtkio.h"
 
 //'Global' texture, declared as an external texture in integration.cu. Stores data on the device.
 texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
@@ -26,60 +27,7 @@ void datagen (float4*** data) {
 	}
 }
 
-int dataread (float4* data, const char* filename, float4 &origin){
-	unsigned int i, j, k, datasize;
-	unsigned int n_x =0, n_y=0, n_z=0;
-	char kind[20];
-	char name[20];
-	char type[20];
-	char rstr[80];
-	float4 rspacing;
-	FILE *dfp;
 
-	dfp= fopen(filename, "r");
-	for(unsigned int i=0; i<4; ++i) {
-		fgets(rstr, 80, dfp);
-		std::cout << rstr;
-	}
-	fscanf(dfp, "%s %u %u %u", rstr, &n_x, &n_y, &n_z);
-	if(!( n_x == 256 && n_y == 256 && n_z ==256)) {
-		std::cout<<"Warning: incorrect " << rstr << " read: expected 256, got: " << n_z << std::endl;
-	}
-	fscanf(dfp, "%s %f %f %f", rstr, &origin.x, &origin.y, &origin.z);
-	fscanf(dfp, "%s %f %f %f", rstr, &rspacing.x, &rspacing.y, &rspacing.z);
-	if(! (rspacing.x == rspacing.y && rspacing.y == rspacing.z)) {
-		std::cout << "Warning: (unsupported) anisotrope spacing read!" << std::endl;
-	}
-	fscanf(dfp, "%s %u", rstr, &datasize);
-	if(datasize != n_x*n_y*n_z) {
-		std::cout<<"Error: " << rstr << "is not equal to n_x*n_y*n_z" << std::endl;
-		return 1;
-	}
-	fscanf(dfp, "%s %s %s", kind, name, type);
-	if(kind != "VECTORS" || name != "bfield" || type != "float") {
-		std::cout << "Error: Incorrect kind, name or type" << std::endl;
-		return 1;
-	}
-	for(unsigned int i=0; i<datasize; ++i) {
-		float datapoint[3] = {0,0,0};
-		fread(datapoint, sizeof(float), 3, dfp);
-		data[i] = make_float4(datapoint[0],datapoint[1],datapoint[2],0);
-	}
-	std::cout << "Data read in was succesfull!" << std::endl;
-	return 0;
-}
-
-
-void datawrite (const char* location, int steps, float4* h_lines){ 
-    //write the first streamline to a file. Remember this is 32 bits when reading!
-    FILE *fp;
-    fp = fopen(location, "w");
-    for (unsigned int i = 0; i<steps; i++){   //write only the first streamline
-        fwrite(&h_lines[i], sizeof(float4), 1, fp);
-    }
-    fclose(fp);
-    std::cout<<"streamline written!"<<std::endl;
-}
 
 int main(void) {
 	//Allocate array on device
@@ -146,16 +94,19 @@ int main(void) {
 	//Copy data from device to host
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcountRK4*steps*sizeof(float4), cudaMemcpyDeviceToHost));
 
-	//Print 100 samples from the line
+/*	//Print 100 samples from the line
 	int index = 0;
 	for(unsigned int i=0; i<100; i++) {
 		index = 2*steps + i*steps/100;
 		std::cout << "x= " << h_lines[index].x << "; y= "<< h_lines[index].y << " "<< h_lines[index].x*h_lines[index].x+h_lines[index].y*h_lines[index].y << std::endl;
-	}
+	}*/
     
 //    datawrite("../datadir/test.bin", steps, h_lines);
-    dataread(hostvfield[0][0],"test.txt", startloc);
-            
+    vtkDataRead(hostvfield[0][0],"../datadir/animation10.vtk", startloc);
+     //Print 20 samples from the dataset
+	for(unsigned int i=0; i<20; i++) {
+		std::cout << "x= " << hostvfield[1][1][i+10].x << "; y= "<< hostvfield[1][1][i+10].y << "; z=  "<<hostvfield[1][1][i+10].z << std::endl;
+	}       
     //Free host pointers
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
