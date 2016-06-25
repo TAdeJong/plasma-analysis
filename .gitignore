@@ -31,6 +31,9 @@
 code/cudasamples
 code/main
 
+#Don't put data files in the git repo
+datadir/*
+
 #LaTeXfiles
 documentation/*.aux
 documentation/*.glo
