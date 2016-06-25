@@ -52,9 +52,7 @@ int main(int argc, char *argv[]) {
 
 	//Read data from file specified as argument
 	float4 dataorigin = {0,0,0,0};
-	if(argc>1){
-		vtkDataRead(hostvfield[0][0],argv[1], dataorigin);
-	}
+	vtkDataRead(hostvfield[0][0],argv[1], dataorigin);
 	if(dataorigin.x != origin || dataorigin.y != origin || dataorigin.z != origin) {
 		std::cout << "Warning: origin read from file not equal to origin from constats.h" << std::endl;
 	}
@@ -132,7 +130,9 @@ int main(int argc, char *argv[]) {
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
 	free(hostvfield);
-	
+	cudaFree(d_origins);
+	cudaFree(d_lines);
+	cudaFreeArray(dataArray);
 	return 0;
 }
 
