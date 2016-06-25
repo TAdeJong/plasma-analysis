@@ -18,6 +18,9 @@ float orderSwap( float f )
 	return dat2.f;
 }
 
+/*	Reads the data from filename (in vtk format) and stores the origin in the file at origin
+	and the vector field in the file in data
+*/
 int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 	unsigned int datasize;
 	unsigned int n_x =0, n_y=0, n_z=0;

@@ -54,8 +54,9 @@ int main(int argc, char *argv[]) {
 	float4 dataorigin = {0,0,0,0};
 	vtkDataRead(hostvfield[0][0],argv[1], dataorigin);
 	if(dataorigin.x != origin || dataorigin.y != origin || dataorigin.z != origin) {
-		std::cout << "Warning: origin read from file not equal to origin from constats.h" << std::endl;
+		std::cout << "Warning: origin read from file not equal to origin from constants.h" << std::endl;
 	}
+
 	//Allocate array on device
 	cudaArray* dataArray;
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(32,32,32,32,cudaChannelFormatKindFloat);
@@ -88,7 +89,7 @@ int main(int argc, char *argv[]) {
 	dim3 gridsizeRK4(1,1);
 	dim3 blocksizeRK4(8,8);
 	int threadcountRK4 = gridsizeRK4.x*gridsizeRK4.y*blocksizeRK4.x*blocksizeRK4.y;
-	float4 startloc = dataorigin;
+	float4 startloc = dataorigin; //Location (in Smietcoords) to start the integration, to be varied
 	float4 xvec = {1,0,0,0};
 	float4 yvec = {0,1,0,0};
 
@@ -102,16 +103,26 @@ int main(int argc, char *argv[]) {
 	RK4line<<<gridsizeRK4,blocksizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsizeRK4);
 	float4 *d_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
+
+	//Adds the magnetic lines coordinate-wise, highly parallel? (Is this even true?)
 	reduceSum<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
 	reduceSum<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
+
 	//Copy data from device to host
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcountRK4*steps*sizeof(float4), cudaMemcpyDeviceToHost));
-
 	checkCudaErrors(cudaMemcpy(&dataorigin, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
+
+	//Converts the sum from above into an average
 	dataorigin /= (float)steps*threadcountRK4;
+
+	//Display origin:
 	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
 	float4 normal = {0,0,0,0};
+
+	//We already do this allocation above (line 105). Is this necessary?
 	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
+
+	//Compute the normal to the plane through the torus.
 	reduceNormal<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
 	reduceNormal<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
