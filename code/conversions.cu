@@ -35,13 +35,14 @@ __device__ float4 calcorigin(float4* lineoutput, int steps, dim3 gridsize, int n
 	return origin;
 }
 
-__device__ void reducesum(float4* g_linedata, float4* g_sumdata) {
+//Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets and needs a minimum of sdata of 64*sizeof(float4) (!)
+__global__ void reduceSum(float4* g_linedata, float4* g_sumdata) {
 	extern __shared__ float4 sdata[];
 
 	//load data from global data to shared mem and perform first reduction
 	unsigned int tid = threadIdx.x;
 	unsigned int i = blockIdx.x*blockDim.x*2 + threadIdx.x;
-	sdata[i] = g_linedata[i]+g_linedata[i+blockDim.x];
+	sdata[tid] = g_linedata[i]+g_linedata[i+blockDim.x];
 	__syncthreads();
 
 	//do the reductions
@@ -92,13 +93,13 @@ __device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int n
 	return normal;
 }
 //Give a third parameter to your kernellaunch for the size of sdata
-__device__ void reducenormal(float4* g_linedata, float4* g_normaldata) {//equivalent to doing the texture-fetch and cross product and applying reducesum
+__global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equivalent to doing the texture-fetch and cross product and applying reducesum
 	extern __shared__ float4 sdata[];
 
 	//load data from global data&texture to shared mem and perform cross product
 	unsigned int tid = threadIdx.x;
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-	sdata[i] = make_float4(cross(make_float3(g_linedata[i]), make_float3(tex3D(dataTex, Smiet2Tex(g_linedata[i])))));
+	sdata[tid] = make_float4(cross(make_float3(g_linedata[i]), make_float3(tex3D(dataTex, Smiet2Tex(g_linedata[i])))));
 	__syncthreads();
 
 	//do the reductions

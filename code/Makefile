@@ -1,7 +1,7 @@
 #Compiler is nvcc
 CC=nvcc
 #Includeflags
-IFLAGS=--include-path cudasamples -dc -c
+IFLAGS=-lineinfo --include-path cudasamples -dc -c
 
 all: main
 

@@ -9,7 +9,7 @@ __device__ float4 calcorigin(float4* lineoutput, int steps, dim3 gridsize, int n
 
 __device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication, float4 origin);
 
-__device__ void reducesum( float4* g_linedata, float4* g_sumdata);
+__global__ void reduceSum( float4* g_linedata, float4* g_sumdata);
 
-__device__ void reducenormal( float4* g_linedata, float4* g_normaldata);
+__global__ void reduceNormal( float4* g_linedata, float4* g_normaldata);
 #endif
