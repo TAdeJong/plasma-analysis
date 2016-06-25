@@ -56,7 +56,7 @@ __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equiva
 	__syncthreads();
 
 	//do the reductions
-	for( unsigned int s=blockDim.x; s>32; s>>=1) {//32 = warpsize
+	for( unsigned int s=blockDim.x/2; s>32; s>>=1) {//32 = warpsize
 		if(tid < s) {
 			sdata[tid] += sdata[tid+s];
 		}
