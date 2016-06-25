@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
 	//Copy data to device
 	cudaMemcpy3DParms copyParms = {0};
-	copyParms.srcPtr = make_cudaPitchedPtr((void *)hostvfield[0][0], extent.width* sizeof(float4), extent.height, extent.depth);
+	copyParms.srcPtr = make_cudaPitchedPtr((void *)hostvfield[0][0], extent.width*sizeof(float4), extent.height, extent.depth);
 	copyParms.dstArray = dataArray;
 	copyParms.extent = extent;
 	copyParms.kind = cudaMemcpyHostToDevice;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	double time = 1024;
-	int steps = 8192;
+	int steps = 1024;
 	float dt = time/steps;
 
 	dim3 gridsizeRK4(1,1);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 	float4 normal = {0,0,0,0};
 	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
 	reduceNormal<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
-	reduceSum<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
+	reduceNormal<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
