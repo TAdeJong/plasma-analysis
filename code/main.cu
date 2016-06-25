@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	double time = 1024;
-	int steps = 2048;
+	int steps = 8192;
 	float dt = time/steps;
 
 	dim3 gridsizeRK4(1,1);
@@ -111,7 +111,14 @@ int main(int argc, char *argv[]) {
 
 	checkCudaErrors(cudaMemcpy(&dataorigin, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	dataorigin /= (float)steps*threadcountRK4;
-	std::cout << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
+	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
+	float4 normal = {0,0,0,0};
+	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
+	reduceNormal<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
+	reduceSum<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
+	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
+	
+	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
 /*	//Print 100 samples from the line
 	int index = 0;
 	for(unsigned int i=0; i<100; i++) {
