@@ -2,14 +2,15 @@
 CC=nvcc
 #Includeflags
 IFLAGS=-lineinfo --include-path cudasamples -dc -c
+CCFLAGS= -arch compute_52
 
 all: main
 
 main: main.o integration.o coordfunctions.o conversions.o vtkio.o
-	$(CC) main.o coordfunctions.o integration.o vtkio.o conversions.o -o main
+	$(CC) $(CCFLAGS) main.o coordfunctions.o integration.o vtkio.o conversions.o -o main
 
 %.o: %.cu
-	$(CC) $(IFLAGS) -o $@ $<
+	$(CC) $(CCFLAGS) $(IFLAGS) -o $@ $<
 
 clean: 
 	rm *.o main

@@ -82,46 +82,48 @@ int main(int argc, char *argv[]) {
 	float4 *d_lines, *h_lines;
 
 	//Set integration parameters (end time, number of steps, etc.)
-	double time = 1024;
-	int steps = 1024;
-	float dt = time/steps;
+	const int blockSize = 1024;
+	int steps = 4*blockSize;
+	float dt = 1;
 
 	dim3 gridsizeRK4(1,1);
 	dim3 blocksizeRK4(8,8);
-	int threadcountRK4 = gridsizeRK4.x*gridsizeRK4.y*blocksizeRK4.x*blocksizeRK4.y;
+	int dataCount = gridsizeRK4.x*gridsizeRK4.y*blocksizeRK4.x*blocksizeRK4.y*steps;
 	float4 startloc = dataorigin; //Location (in Smietcoords) to start the integration, to be varied
 	float4 xvec = {1,0,0,0};
 	float4 yvec = {0,1,0,0};
 
 	//Allocate space on device to store integration output
-	checkCudaErrors(cudaMalloc(&d_lines, threadcountRK4*steps*sizeof(float4)));
+	checkCudaErrors(cudaMalloc(&d_lines, dataCount*sizeof(float4)));
 
 	//Allocate space on host to store integration output
-	h_lines = (float4*) malloc(threadcountRK4*steps*sizeof(float4));
+	h_lines = (float4*) malloc(dataCount*sizeof(float4));
 
 	//Integrate the vector field
 	RK4line<<<gridsizeRK4,blocksizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec, gridsizeRK4);
+
 	float4 *d_origins;
-	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
+	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
 
 	//Add the coordinates of the streamlines coordinatewise (in order to calculate mean.
-	reduceSum<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
-	reduceSum<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
+	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
+	reduceSum<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
 	//Copy data from device to host
-	checkCudaErrors(cudaMemcpy(h_lines, d_lines, threadcountRK4*steps*sizeof(float4), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
 	checkCudaErrors(cudaMemcpy(&dataorigin, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 
 	//Converts the sum from above into an average
-	dataorigin /= (float)steps*threadcountRK4;
+	dataorigin /= (float)steps*dataCount;
 
 	//Display origin:
 	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
 	float4 normal = {0,0,0,0};
 
 	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
-	reduceNormal<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
-	reduceNormal<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
+	reduceNormal<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
+	reduceNormal<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
+
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
