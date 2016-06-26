@@ -65,6 +65,9 @@ int main(int argc, char *argv[]) {
 
 	//Set linear interpolation mode
 	dataTex.filterMode = cudaFilterModeLinear;
+	dataTex.addressMode[0] = cudaAddressModeBorder;
+	dataTex.addressMode[1] = cudaAddressModeBorder;
+	dataTex.addressMode[2] = cudaAddressModeBorder;
 
 
 	//Copy data to device
@@ -83,13 +86,13 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	int steps = 4*blockSize;
-	float dt = 1;
+	int steps = 8*blockSize;
+	float dt = 1/8.0;
 
 	dim3 gridsizeRK4(1,1);
 	dim3 blocksizeRK4(8,8);
 	int dataCount = gridsizeRK4.x*gridsizeRK4.y*blocksizeRK4.x*blocksizeRK4.y*steps;
-	float4 startloc = dataorigin; //Location (in Smietcoords) to start the integration, to be varied
+	float4 startloc = make_float4(-1,0,0,0); //Location (in Smietcoords) to start the integration, to be varied
 	float4 xvec = {1,0,0,0};
 	float4 yvec = {0,1,0,0};
 
@@ -127,14 +130,9 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
-/*	//Print 100 samples from the line
-	int index = 0;
-	for(unsigned int i=0; i<100; i++) {
-		index = 2*steps + i*steps/100;
-		std::cout << "x= " << h_lines[index].x << "; y= "<< h_lines[index].y << " "<< h_lines[index].x*h_lines[index].x+h_lines[index].y*h_lines[index].y << std::endl;
-	}*/
-    
-//    datawrite("../datadir/test.bin", steps, h_lines);
+
+    //Write all the lines
+    datawrite("../datadir/data.bin", dataCount, h_lines);
    
 //Free host pointers
 	free(hostvfield[0][0]);
