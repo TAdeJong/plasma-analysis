@@ -1,5 +1,6 @@
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 def loadCudaStream(name):
     """
@@ -13,9 +14,11 @@ def loadCudaStream(name):
     data=np.delete(data,3,1)
     return data
 #
-data=np.fromfile("../datadir/test.bin", dtype="float32")
-data=data.reshape(int(len(data)/4), 4)
-
-plt.plot(data[:,0], data[:,1])
+data=np.fromfile("../datadir/data.bin", dtype="float32")
+data=data.reshape(64, int(len(data)/(4*64)) , 4)
+fig = plt.figure()
+ax = fig.add_subplot(111,projection='3d')
+for i in range(0,64,9) :
+    ax.plot(data[i,:,0], data[i,:,1], data[i,:,2])
 plt.show()
 
