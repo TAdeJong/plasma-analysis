@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
 	float4 *d_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
 
-	//Adds the magnetic lines coordinate-wise, highly parallel? (Is this even true?)
+	//Add the coordinates of the streamlines coordinatewise (in order to calculate mean.
 	reduceSum<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
 	reduceSum<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
 
@@ -119,10 +119,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
 	float4 normal = {0,0,0,0};
 
-	//We already do this allocation above (line 105). Is this necessary?
-	checkCudaErrors(cudaMalloc(&d_origins, threadcountRK4*sizeof(float4)));
-
-	//Compute the normal to the plane through the torus.
+	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
 	reduceNormal<<<threadcountRK4,steps/2,steps/2*sizeof(float4)>>>(d_lines, d_origins);
 	reduceNormal<<<1,threadcountRK4/2,threadcountRK4*sizeof(float4)>>>(d_origins, d_origins);
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
