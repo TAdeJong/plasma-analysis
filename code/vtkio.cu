@@ -58,14 +58,15 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 		return 1;
 	}
 	fscanf(dfp, "%s %s %s\n", kind, name, type);
-	while(!strcmp(name,"bfield")) {
-		if(strcmp(type,"SCALARS")) {
+	while(strcmp(name,"bfield")!=0) {
+		if(strcmp(kind,"SCALARS")==0) {
 			printf("Found a SCALAR field %s, discarding it", name);
+		    fgets(rstr, 80, dfp);
 			float todiscard = 0;
 			for(unsigned int i=0; i<datasize; ++i) {
 				fread(&todiscard, sizeof(float), 1, dfp);
 			}
-		} else if (strcmp(type,"VECTORS")) {
+		} else if (strcmp(kind,"VECTORS")==0) {
 			printf("Found a VECTOR field %s, discarding it", name);
 			float todiscard[3] = {0,0,0};
 			for(unsigned int i=0; i<datasize; ++i) {
@@ -76,8 +77,9 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 			return 1;
 		}
 		fscanf(dfp, "%s %s %s\n", kind, name, type);
+		printf("Je moeder is een correct: %s, %s, %s\n",kind, name, type);
 	}
-	if(!strcmp(type,"float")) {
+	if(strcmp(type,"float")!=0) {
 		printf("Error: Incorrect type, found: %s, %s, %s\n",kind, name, type);
 		fclose(dfp);
 		return 1;
