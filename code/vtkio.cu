@@ -1,7 +1,10 @@
 #include "vtkio.h"
 #include <stdio.h>
-
+#include "constants.h"
 #include <iostream>
+#include <string,h>
+
+//Swap order of bytes to convert from little-endian to big-endian\\
 float orderSwap( float f )
 {
 	union
@@ -37,7 +40,7 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 		std::cout << rstr;
 	}
 	fscanf(dfp, "%s %u %u %u", rstr, &n_x, &n_y, &n_z);
-	if(!( n_x == 256 && n_y == 256 && n_z ==256)) {
+	if(!( n_x == N && n_y == N && n_z == N)) {
 		std::cout<<"Warning: incorrect " << rstr << " read: expected 256, got: " << n_z << std::endl;
 		fclose(dfp);
 		return 1;
@@ -55,7 +58,7 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 		return 1;
 	}
 	fscanf(dfp, "%s %s %s\n", kind, name, type);
-	if(type == "float") {
+	if(!std::strcmp(type,"float")) {
 		printf("Error: Incorrect type, found: %s, %s, %s\n",kind, name, type);
 		fclose(dfp);
 		return 1;
