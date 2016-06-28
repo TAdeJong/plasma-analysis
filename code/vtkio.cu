@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include "constants.h"
 #include <iostream>
-#include <string,h>
+#include <cstring>
 
-//Swap order of bytes to convert from little-endian to big-endian\\
+//Swap order of bytes to convert from little-endian to big-endian
 float orderSwap( float f )
 {
 	union
@@ -58,7 +58,7 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 		return 1;
 	}
 	fscanf(dfp, "%s %s %s\n", kind, name, type);
-	if(!std::strcmp(type,"float")) {
+	if(!strcmp(type,"float")) {
 		printf("Error: Incorrect type, found: %s, %s, %s\n",kind, name, type);
 		fclose(dfp);
 		return 1;
