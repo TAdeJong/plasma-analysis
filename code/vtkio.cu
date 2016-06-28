@@ -63,6 +63,25 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 		fclose(dfp);
 		return 1;
 	}
+	while(!strcmp(name,"bfield")) {
+		if(strcmp(type,"SCALARS")) {
+			printf("Found a SCALAR field %s, discarding it", name);
+			float todiscard = 0;
+			for(unsigned int i=0; i<datasize; ++i) {
+				fread(&todiscard, sizeof(float), 1, dfp);
+			}
+		} else if (strcmp(type,"VECTORS")) {
+			printf("Found a VECTOR field %s, discarding it", name);
+			float todiscard[3] = {0,0,0};
+			for(unsigned int i=0; i<datasize; ++i) {
+				fread(&todiscard, sizeof(float), 3, dfp);
+			}
+		} else {
+			printf("Error: unknown datatype %s", name);
+			return 1;
+		}
+		fscanf(dfp, "%s %s %s\n", kind, name, type);
+	}
 	for(unsigned int i=0; i<datasize; ++i) {
 		float datapoint[3] = {0,0,0};
 		fread(datapoint, sizeof(float), 3, dfp);
