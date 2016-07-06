@@ -14,4 +14,8 @@ __device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int n
 __global__ void reduceSum( float4* g_linedata, float4* g_sumdata);
 
 __global__ void reduceNormal( float4* g_linedata, float4* g_normaldata);
+
+__device__ float Lengthstep( float4 loc, double dt);
+
+__global__ void lineLength(float4* g_linedata, double dt, float4* g_lengthoutput);
 #endif
