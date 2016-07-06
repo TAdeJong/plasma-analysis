@@ -120,7 +120,7 @@ __device__ float Lengthstep(float4 loc, double dt) {
 	return dt/6.0*(l1 + 2.0*(l2 + l3) + l4);
 }
 
-__global__ lineLength(float4* g_linedata, double dt, float* g_lengthoutput) {
+__global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput) {
 	int index = blockIdx.x*blockDim.x + threadIdx.x;
 	g_lengthoutput[index] = Lengthstep(g_linedata[index],dt);
 }

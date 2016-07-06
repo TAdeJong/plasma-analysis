@@ -132,6 +132,16 @@ int main(int argc, char *argv[]) {
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
 
+
+	//Allocating the array to store the length data
+	float *d_lengths;
+	checkCudaErrors(cudaMalloc(&d_lengths, datacount*sizeof(float4)));
+
+	//Compute the length of each line (locally)
+	lineLength<<<datacount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
+
+	//Add the length of the pieces of the lines to obtain line length, to be added
+
     //Write all the lines
     datawrite("../datadir/data.bin", dataCount, h_lines);
    
