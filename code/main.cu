@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	float4 *d_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
 
-	//Add the coordinates of the streamlines coordinatewise (in order to calculate mean.
+	//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
 	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
 	reduceSum<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
 	reduceNormal<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
 	reduceNormal<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
+	//Copy normal from decive to host
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
@@ -134,7 +135,7 @@ int main(int argc, char *argv[]) {
     //Write all the lines
     datawrite("../datadir/data.bin", dataCount, h_lines);
    
-//Free host pointers
+	//Free host pointers
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
 	free(hostvfield);

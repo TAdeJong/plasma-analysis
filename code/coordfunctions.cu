@@ -18,25 +18,25 @@ __device__ float4 ShiftCoord(float4 locSmiet, float4 offset) {
 	return locSmiet - offset;
 }
 
-//please check me
+//Checked
 __device__ float4 RotateCoord(float4 locSmiet, float4 znew, float4 ynew) {
 	znew = normalize(znew);
 	ynew = normalize(ynew);
-	float4 xnew = make_float4(cross(make_float3(ynew), make_float3(znew))); //rechtshandig, linkshandig?
-	return make_float4(dot(xnew,locSmiet),dot(ynew,locSmiet),dot(znew,locSmiet),0);
+	float4 xnew = make_float4(cross(make_float3(ynew), make_float3(znew)), 0); //rechtshandig
+	return make_float4(dot(xnew,locSmiet),dot(ynew,locSmiet),dot(znew,locSmiet), 0);
 }
 
-//please check me
+//Checked
 __device__ float4 Cart2Sphere(float4 locSmiet) {
-	return make_float4(length(locSmiet),acos(locSmiet.z/length(locSmiet)),atan(locSmiet.y/locSmiet.z),0);
+	return make_float4(length(locSmiet),acos(locSmiet.z/length(locSmiet)),atan(locSmiet.y/locSmiet.x),0);
 }
 
-//Please check me
+//Checked
 __device__ float4 Cart2Tor(float4 locSmiet, float R) {
-	float theta = atan(locSmiet.y/locSmiet.z);
-	float r = length(make_float2(locSmiet.x,locSmiet.y));//in xy-plane
-	float phi = atan((r-R)/locSmiet.z); 
-	r = length(make_float2(r-R,locSmiet.z));//in phi,Z plane
-	return make_float4(r,theta,phi,0);
+	float alpha = atan(locSmiet.y/locSmiet.x);
+	float rho = length(make_float2(locSmiet.x,locSmiet.y));//projection onto xy-plane
+	float beta = atan(locSmiet.z/(rho-R)); 
+	float r = length(make_float2(rho-R,locSmiet.z));//in alpha=constant plane
+	return make_float4(r,alpha,beta,0);
 }
 
