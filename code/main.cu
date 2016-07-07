@@ -135,10 +135,10 @@ int main(int argc, char *argv[]) {
 
 	//Allocating the array to store the length data
 	float *d_lengths;
-	checkCudaErrors(cudaMalloc(&d_lengths, datacount*sizeof(float4)));
+	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float4)));
 
 	//Compute the length of each line (locally)
-	lineLength<<<datacount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
+	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
 
 	//Add the length of the pieces of the lines to obtain line length, to be added
 
