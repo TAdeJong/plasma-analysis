@@ -156,8 +156,10 @@ int main(int argc, char *argv[]) {
 	free(hostvfield[0]);
 	free(hostvfield);
 	free(h_lines);
+	free(h_lengths);
 	cudaFree(d_origins);
 	cudaFree(d_lines);
+	cudaFree(d_lengths);
 	cudaFreeArray(dataArray);
 	return 0;
 }
