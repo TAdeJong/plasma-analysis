@@ -17,5 +17,5 @@ __global__ void reduceNormal( float4* g_linedata, float4* g_normaldata);
 
 __device__ float Lengthstep( float4 loc, double dt);
 
-__global__ void lineLength(float4* g_linedata, double dt, float4* g_lengthoutput);
+__global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput);
 #endif

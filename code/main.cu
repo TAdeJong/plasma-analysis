@@ -127,21 +127,27 @@ int main(int argc, char *argv[]) {
 	reduceNormal<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
 	reduceNormal<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
-	//Copy normal from decive to host
+	//Copy normal from device to host
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
 
 
-	//Allocating the array to store the length data
-	float *d_lengths;
+	//Allocating the array to store the length data, both for host and device
+	float *d_lengths, *h_lengths;
 	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float4)));
+	h_lengths = (float*) malloc((dataCount/steps)*sizeof(float));
 
 	//Compute the length of each line (locally)
 	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
 
-	//Add the length of the pieces of the lines to obtain line length, to be added
+	//Add the length of the pieces of the lines to obtain line length
+	//Stores the length of the i'th line in d_lengths[i]
+	reduceSum<<<dataCount/steps,steps/2,(steps/2)*sizeof(float)>>>(d_lengths,d_lengths);
 
+	//Copy lengths from device to host
+	checkCudaErrors(cudaMemcpy(&h_lengths, d_lengths, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
+	
     //Write all the lines
     datawrite("../datadir/data.bin", dataCount, h_lines);
    
