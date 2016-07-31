@@ -1,6 +1,6 @@
-#include "coordfunctions.h"
-#include "constants.h"
-#include "conversions.h"
+#include "coordfunctions.cuh"
+#include "constants.cuh"
+#include "conversions.cuh"
 #include "helper_math.h"
 
 extern texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;

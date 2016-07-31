@@ -1,6 +1,6 @@
-#include "vtkio.h"
+#include "vtkio.cuh"
 #include <stdio.h>
-#include "constants.h"
+#include "constants.cuh"
 #include <iostream>
 #include <cstring>
 

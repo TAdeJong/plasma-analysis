@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <helper_cuda.h>
 #include <iostream>
-#include "constants.h"
-#include "coordfunctions.h"
-#include "conversions.h"
-#include "integration.h"
-#include "vtkio.h"
+#include "constants.cuh"
+#include "coordfunctions.cuh"
+#include "conversions.cuh"
+#include "integration.cuh"
+#include "vtkio.cuh"
 #include "helper_math.h"
 
 //'Global' texture, declared as an external texture in integration.cu. Stores data on the device.

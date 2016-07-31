@@ -1,6 +1,6 @@
-#include "constants.h"
-#include "coordfunctions.h"
-#include "constants.h"
+#include "constants.cuh"
+#include "coordfunctions.cuh"
+#include "constants.cuh"
 #include "helper_math.h"
 
 __device__ float4 tex3D(texture<float4, 3, cudaReadModeElementType> tex, float3 a) {
