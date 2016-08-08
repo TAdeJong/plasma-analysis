@@ -64,8 +64,10 @@ __global__ void reduceSum(float4* g_linedata, float4* g_sumdata) {
 
 		__syncthreads();
 	}
-	for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
-		sdata[tid] += sdata[tid+s];
+	if(tid<s ) {
+		for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
+			sdata[tid] += sdata[tid+s];
+		}
 	}
 
 	//write result to global
