@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
 	float4 normal = {0,0,0,0};
 
-	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
+/*	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
 	reduceNormal<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
 	reduceNormal<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMemcpy(&normal, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 	
 	std::cout << "Normal: " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
-
+*/
 
 	//Allocating the array to store the length data, both for host and device
 	float *d_lengths, *h_lengths;
