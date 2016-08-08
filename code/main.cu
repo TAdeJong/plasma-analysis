@@ -29,15 +29,7 @@ void datagen (float4*** data) {
 	}
 }
 
-
-
-int main(int argc, char *argv[]) {
-	if (argc == 1) {
-		std::cout << "Please specify as an argument the path to the .vtk file to use"  << std::endl;
-		return 1;
-	}
-	//Allocate data array on host
-	float4*** hostvfield; 
+void allocarray (float4*** &hostvfield) {
 	hostvfield = (float4***) malloc(N*sizeof(float4**));
 	hostvfield[0] = (float4**) malloc(N*N*sizeof(float4*));
 	hostvfield[0][0] = (float4*) malloc(N*N*N*sizeof(float4));
@@ -49,6 +41,18 @@ int main(int argc, char *argv[]) {
 			hostvfield[i][j] = (hostvfield[0][0] + (i*N*N + j*N));
 		}
 	}
+}
+
+
+
+int main(int argc, char *argv[]) {
+	if (argc == 1) {
+		std::cout << "Please specify as an argument the path to the .vtk file to use"  << std::endl;
+		return 1;
+	}
+	//Allocate data array on host
+	float4*** hostvfield;
+	allocarray(hostvfield);
 
 	//Read data from file specified as argument
 	float4 dataorigin = {0,0,0,0};
