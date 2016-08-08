@@ -45,7 +45,7 @@ __global__ void reducePC(float4* g_linedata, int* g_PCdata) {
 	if(tid == 0) g_PCdata[blockIdx.x] = idata[0];
 }
 
-//Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets and needs a minimum of sdata of 64*sizeof(float4) (!)
+//Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets
 __global__ void reduceSum(float4* g_linedata, float4* g_sumdata) {
 	extern __shared__ float4 sdata[];
 
@@ -56,21 +56,18 @@ __global__ void reduceSum(float4* g_linedata, float4* g_sumdata) {
 	__syncthreads();
 
 	//do the reductions
-	for( unsigned int s=blockDim.x/2; s>32; s>>=1) {//32 = warpsize
+	unsigned int s=blockDim.x/2;
+	for( ; s>32; s>>=1) {//32 = warpsize
 		if(tid < s) {
 			sdata[tid] += sdata[tid+s];
 		}
 
 		__syncthreads();
 	}
-	if(tid<32) {// Warp's zijn SIMD gesynchroniseerd
-		sdata[tid] += sdata[tid + 32];
-		sdata[tid] += sdata[tid + 16];
-		sdata[tid] += sdata[tid + 8];
-		sdata[tid] += sdata[tid + 4];
-		sdata[tid] += sdata[tid + 2];
-		sdata[tid] += sdata[tid + 1];
+	for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
+		sdata[tid] += sdata[tid+s];
 	}
+
 	//write result to global
 	if(tid == 0) g_sumdata[blockIdx.x] = sdata[0];
 }
