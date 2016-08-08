@@ -111,7 +111,11 @@ __global__ void reduceSum(float* g_linedata, float* g_sumdata) {
 
 
 
-//Give a third parameter to your kernellaunch for the size of sdata
+/*	Warning: absolutely useless!
+	Mathematics is not correct, does not give normal to plane of torus!!
+		DO NOT USE
+	Give a third parameter to your kernellaunch for the size of sdata
+*/
 __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equivalent to doing the texture-fetch and cross product and applying reducesum
 	extern __shared__ float4 sdata[];
 
