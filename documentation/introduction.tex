@@ -21,14 +21,25 @@ To implement the code we were inspired by Marek Fiser.\footnote{\url{http://www.
 \section{Data representation}
 The dataset we use is a set of $256^3$ points in a regular rectangular grid for which the $(x,y,z)$ components of the magnetic field are given. This sort of dataset has a strong correspondence with a 3D texture on a GPU. Using this representation in CUDA has several advantages, of which the hardware trilinear interpolation is the most notable.
 \section{Coordinate systems}
-Troughout the analysis we use three coordinate systems: cartesian $9x,y,z)$, spherical $(r,\theta,\phi)$ and toroidal $(s,\alpha, \beta)$. We use cartesian as the original dataset is cartesian and this yields the simplest line integrators. For the analysis it will however be beneficial to think in toroidal coordinates:
+Troughout the analysis we use three coordinate systems: cartesian $(x,y,z)$, spherical $(r,\theta,\phi)$ and toroidal $(s,\alpha, \beta)$. We use cartesian as the original dataset is cartesian and this yields the simplest line integrators. For the analysis it will however be beneficial to think in toroidal coordinates:
 \[(s,\alpha,\beta)\in ([0,r_{max}],[0,2\pi],[0,2\pi])\]
 where $\alpha$ is the angle in the horizontal plane, corresponding to $\theta$ in spherical coordinates, $s$ is the (shortest) distance to the core of the torus, and $\beta$ is the remaining angle on the torus, in the $r,\phi$-plane.
 \subsection{Conversion}
-To calculate the toroidal coordinates, we first need to know the location of the core of the torus. To do this, we can first convert the coordinates of a (set of) field line(s) to spherical, after which we can take the mean $r$ and $\phi$. So this yields a radius to the core of the torus $r_t$ and an elevation $\phi_t$. It might be beneficial to eliminate this elevation by translating the original system over the $z$-axis such that the elevation is equal to zero.
+To calculate the toroidal coordinates, we first need to know the location of the core of the torus. To do this, we can first convert the coordinates of a (set of) field line(s) to spherical, after which we can take the mean $r$ and $\phi$. So this yields a radius to the core of the torus $r_t$ and an elevation $\phi_t$. It might be beneficial to eliminate this elevation by translating the original system over the $z$-axis such that the elevation is equal to zero.\\
+For a torus with a large radius (radius between the core of the torus and the central point of the torus) $r_t$ and inner radius (radius between the core of the torus and the surface of the torus) $r_{max}$ the conversion formulae between Cartesian and Toroidal coordinates are given by:
+\begin{align*}
+x &= \cos(\alpha)(r_{t}+\cos(\beta)r_{max})\\
+y &= \sin(\alpha)(r_{t}+\cos(\beta)r_{max})\\
+z &= r_{max}\sin(\beta)\\
+\alpha &= \arctan\left(\frac{y}{x}\right)\\
+\beta &= \arctan\left(\frac{z}{\sqrt{x^2+y^2}-r_{t}}\right)\\
+d\alpha &= \frac{xdy-ydx}{x^2+y^2}\\
+d\beta &= \frac{1}{\rho^2+z^2}\left(\rho dz - \frac{z}{\rho}(xdx+ydy)\right) &\text{(Where $\rho = \sqrt{x^2+y^2}-r_{t}$)}\\
+\end{align*}
 \section{Analysis}
 The primary winding number for a field line is in toroidal coordinates simply given by:
 \[N_w = \frac{\int d\alpha}{\int d\beta}\]
+There are two ways of computing these integrals. We can either use the formulae for $d\alpha$ and $d\beta$ given above and integrate those numerically, or we can compute the $\alpha$ and $\beta$-value at each point along our line, check when they jump by $2\pi$ and then compare the last and the first value to find the integral. Since the numerical integration introduces another texture fetch, another integration error and seems computationally more expensive per point we will use the conversion method.
 \bibliographystyle{plain}
 \bibliography{introduction}
 \end{document}
