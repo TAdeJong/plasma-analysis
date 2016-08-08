@@ -75,6 +75,40 @@ __global__ void reduceSum(float4* g_linedata, float4* g_sumdata) {
 	if(tid == 0) g_sumdata[blockIdx.x] = sdata[0];
 }
 
+/*	Sums all floats in g_linedata, storing the result in g_sumdata.
+	Only works for powers of 2 datasets and needs a minimum of sdata of 64*sizeof(float4) (!)
+	Identical to reduceSum for float4's, needless copying can be fixed with templates
+	but requires clever inclusions of code throughout files. Maybe to be added later.
+*/
+__global__ void reduceSum(float* g_linedata, float* g_sumdata) {
+	extern __shared__ float shdata[];
+
+	//load data from global data to shared mem and perform first reduction
+	unsigned int tid = threadIdx.x;
+	unsigned int i = blockIdx.x*blockDim.x*2 + threadIdx.x;
+	shdata[tid] = g_linedata[i]+g_linedata[i+blockDim.x];
+	__syncthreads();
+
+	//do the reductions
+	for( unsigned int s=blockDim.x/2; s>32; s>>=1) {//32 = warpsize
+		if(tid < s) {
+			shdata[tid] += shdata[tid+s];
+		}
+
+		__syncthreads();
+	}
+	if(tid<32) {// Warp's zijn SIMD gesynchroniseerd
+		shdata[tid] += shdata[tid + 32];
+		shdata[tid] += shdata[tid + 16];
+		shdata[tid] += shdata[tid + 8];
+		shdata[tid] += shdata[tid + 4];
+		shdata[tid] += shdata[tid + 2];
+		shdata[tid] += shdata[tid + 1];
+	}
+	//write result to global
+	if(tid == 0) g_sumdata[blockIdx.x] = shdata[0];
+}
+
 
 
 //Give a third parameter to your kernellaunch for the size of sdata
