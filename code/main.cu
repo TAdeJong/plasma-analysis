@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	int steps = 4*blockSize;
+	unsigned int steps = 4*blockSize;
 	float dt = 1/4.0;
 
 	dim3 gridSizeRK4(1,1);
