@@ -13,6 +13,6 @@ __device__ float Lengthstep( float4 loc, double dt);
 
 __global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput);
 
-__device__ void rxy(float4* g_linedata, float* radius);
+__global__ void rxy(float4* g_linedata, float* radius);
 
 #endif
