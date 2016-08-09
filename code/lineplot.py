@@ -14,12 +14,11 @@ def loadCudaStream(name):
     data=np.delete(data,3,1)
     return data
 #
-data=np.fromfile("../datadir/windings.bin", dtype="float32")
-data=data.reshape(64, 64)
-print data
-
-img = plt.imshow(data)
-#img.set_cmap('hot')
-plt.colorbar()
+data=np.fromfile("../datadir/data.bin", dtype="float32")
+data=data.reshape(64, int(len(data)/(4*64)) , 4)
+fig = plt.figure()
+ax = fig.add_subplot(111,projection='3d')
+for i in range(0,8,1) :
+    ax.plot(data[i,:,0], data[i,:,1], data[i,:,2])
 plt.show()
 
