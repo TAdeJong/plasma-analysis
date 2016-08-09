@@ -160,3 +160,8 @@ __global__ void winding(float4* g_linedata, float4* g_windingdata, const float4 
 	}
 	g_windingdata[i] =  locCord;
 }
+
+__global__ void divide(float* enumerator, float* denominator, float* output) {
+	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+	output[i] = enumerator[i]/denominator[i];
+}
