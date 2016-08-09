@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 
 	//Allocate space to store origin data
 
-	float4 *d_origins, h_origins;
+	float4 *d_origins, *h_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
 	h_origins = (float4*) malloc((dataCount/steps) * sizeof(float4));
 
