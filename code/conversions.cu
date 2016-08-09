@@ -13,7 +13,7 @@ extern texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 */
 
 __device__ int signdiff(float a, float b) {
-	return (a < 0 && b >= 0) || (a>=0 && b <0);
+	return (a < 0 && b >= 0) || (a>0 && b <=0);
 }
 
 //find the number of x=0 transitions in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets and needs a minimum of sdata of 64*sizeof(float) (!)
@@ -141,3 +141,21 @@ __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equiva
 	if(tid == 0) g_normaldata[blockIdx.x] = sdata[0];
 }*/
 
+__device__ void winding(float4* g_linedata, float2* g_windingdata, const float4 origin, const float r_t, unsigned int steps) {
+	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+	unsigned int modifier = min(i%steps,1);
+	float4 locCord = Cart2Tor(ShiftCoord(g_linedata[i], origin), r_t);
+	locCord -= Cart2Tor(ShiftCoord(g_linedata[i-modifier], origin), r_t);
+	//lelijk en langzaam, maar mijn bit-wise magic is niet genoeg om dit netjes te doen
+	if(locCord.y > PI) {
+		locCord.y -= 2*PI;
+	} else if (locCord.y< -1*PI) {
+		locCord.y += 2*PI;
+	}
+	if(locCord.z > PI) {
+		locCord.z -= 2*PI;
+	} else if (locCord.z < -1*PI) {
+		locCord.z += 2*PI;
+	}
+	g_windingdata[i] =  make_float2(locCord.y,locCord.z);
+}
