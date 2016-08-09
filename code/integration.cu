@@ -66,3 +66,9 @@ __global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput)
 	int index = blockIdx.x*blockDim.x + threadIdx.x;
 	g_lengthoutput[index] = Lengthstep(g_linedata[index],dt);
 }
+
+__device__ void rxy(float4* g_linedata, float* radius) {
+	int index = blockIdx.x*blockDim.x + threadIdx.x;
+	float4 locCord = g_linedata[index];
+	radius[i] = length(make_float2(locCord.x,locCord.y));
+}
