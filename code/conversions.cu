@@ -13,7 +13,7 @@ extern texture <float4, cudaTextureType3D, cudaReadModeElementType> dataTex;
 */
 
 __device__ int signdiff(float a, float b) {
-	return (a < 0 && b >= 0) || (a>0 && b <=0);
+	return (a < 0 && b >= 0) || (a>=0 && b <0);
 }
 
 //find the number of x=0 transitions in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets and needs a minimum of sdata of 64*sizeof(float) (!)
