@@ -89,7 +89,8 @@ __global__ void reduceSum(float* g_linedata, float* g_sumdata) {
 	__syncthreads();
 
 	//do the reductions
-	for( unsigned int s=blockDim.x/2; s>32; s>>=1) {//32 = warpsize
+	unsigned int s = blockDim.x/2;
+	for( ; s>32; s>>=1) {//32 = warpsize
 		if(tid < s) {
 			shdata[tid] += shdata[tid+s];
 		}
