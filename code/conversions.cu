@@ -141,12 +141,12 @@ __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equiva
 	if(tid == 0) g_normaldata[blockIdx.x] = sdata[0];
 }*/
 
-__global__ void winding(float4* g_linedata, float4* g_windingdata, const float4 origin, float* g_rdata, unsigned int steps) {
+__global__ void winding(float4* g_linedata, float4* g_windingdata, float4* origin, float* g_rdata, unsigned int steps) {
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned int modifier = min(i%steps,1);
 	float r_t = g_rdata[i/steps];
-	float4 locCord = Cart2Tor(ShiftCoord(g_linedata[i], origin), r_t);
-	locCord -= Cart2Tor(ShiftCoord(g_linedata[i-modifier], origin), r_t);
+	float4 locCord = Cart2Tor(ShiftCoord(g_linedata[i], origin[i/steps]), r_t);
+	locCord -= Cart2Tor(ShiftCoord(g_linedata[i-modifier], origin[i/steps]), r_t);
 	//lelijk en langzaam, maar mijn bit-wise magic is niet genoeg om dit netjes te doen
 	if(locCord.y > PI) {
 		locCord.y -= 2*PI;
