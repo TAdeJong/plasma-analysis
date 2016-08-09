@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
 	h_lines = (float4*) malloc(dataCount*sizeof(float4));
 
 	//Integrate the vector field
-	RK4line<<<gridSizeRK4,blockSizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec, gridSizeRK4);
+	RK4line<<<gridSizeRK4,blockSizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec);
 
 	float4 *d_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
