@@ -143,20 +143,3 @@ __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equiva
 	if(tid == 0) g_normaldata[blockIdx.x] = sdata[0];
 }
 
-__device__ float Lengthstep(float4 loc, double dt) {
-	float3 loc3dTex = Smiet2Tex(loc);
-	float4 k1 = tex3D(dataTex, loc3dTex);
-	float4 k2 = tex3D(dataTex, loc3dTex+(dt*0.5/spacing)*make_float3(k1));
-	float4 k3 = tex3D(dataTex, loc3dTex+(dt*0.5/spacing)*make_float3(k2));
-	float4 k4 = tex3D(dataTex, loc3dTex+(dt/spacing)*make_float3(k3));
-	float l1 = length(k1);
-	float l2 = length(k2);
-	float l3 = length(k3);
-	float l4 = length(k4);
-	return dt/6.0*(l1 + 2.0*(l2 + l3) + l4);
-}
-
-__global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput) {
-	int index = blockIdx.x*blockDim.x + threadIdx.x;
-	g_lengthoutput[index] = Lengthstep(g_linedata[index],dt);
-}

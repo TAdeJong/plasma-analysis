@@ -9,5 +9,8 @@ __global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float
 
 __global__ void readline(float4* lineoutput, unsigned int steps, float4 loc);
 
+__device__ float Lengthstep( float4 loc, double dt);
+
+__global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput);
 
 #endif
