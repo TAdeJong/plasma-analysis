@@ -100,14 +100,14 @@ int main(int argc, char *argv[]) {
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
 	unsigned int steps = 32*blockSize;
-	float dt = 1/4.0;
+	float dt = 1/8.0;
 
 	dim3 gridSizeRK4(1,1);
 	dim3 blockSizeRK4(8,8);
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
-	float4 startloc = make_float4(-1,0,0,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 xvec = {1,0,0,0};
-	float4 yvec = {0,1,0,0};
+	float4 startloc = make_float4(-1.25,0,-0.25,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 xvec = {0.5,0,0,0};
+	float4 yvec = {0,0,0.5,0};
 
 	//Allocate space on device to store integration output
 	checkCudaErrors(cudaMalloc(&d_lines, dataCount*sizeof(float4)));
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
 //	h_radii = (float*) malloc((dataCount/steps)*sizeof(float));
 
 	//Compute the length of each line (locally)
-	rxy<<<dataCount/blockSize,blockSize>>>(d_lines, d_radii, (float)steps, d_origins);
+	rxy<<<dataCount/blockSize,blockSize>>>(d_lines, d_radii, (float)steps, d_origins, steps);
 
 	//Add shit together per line
 	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_radii,d_radii);
@@ -178,10 +178,10 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
 	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
-	winding<<<dataCount/(2*blockSize),blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
+	winding<<<dataCount/blockSize,blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
 
-	float* h_alphacheck = (float*) malloc(500*sizeof(float));
-	checkCudaErrors(cudaMemcpy(h_alphacheck, &d_beta[0], 500*sizeof(float), cudaMemcpyDeviceToHost));
+	float* h_alphacheck = (float*) malloc(steps*sizeof(float));
+	checkCudaErrors(cudaMemcpy(h_alphacheck, &d_beta[0], steps*sizeof(float), cudaMemcpyDeviceToHost));
 
 
 	for(unsigned int i=0; i < 500; i++) {
