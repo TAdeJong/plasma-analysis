@@ -17,6 +17,7 @@ __global__ void reduceSum( float* g_linedata, float* g_sumdata);
 __global__ void winding(float4* g_linedata ,float* g_alpha,float* g_beta, float4* origin, float* r_t, unsigned int steps);
 
 __global__ void divide(float* enumerator, float* denominator, float* output);
+__global__ void divide(float4* enumerator, float denominator, float4* output);
 
 //__global__ void reduceNormal( float4* g_linedata, float4* g_normaldata);
 

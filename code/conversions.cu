@@ -166,3 +166,8 @@ __global__ void divide(float* enumerator, float* denominator, float* output) {
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 	output[i] = enumerator[i]/denominator[i];
 }
+
+__global__ void divide(float4* enumerator, float denominator, float4* output) {
+	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+	output[i] = enumerator[i]/denominator;
+}
