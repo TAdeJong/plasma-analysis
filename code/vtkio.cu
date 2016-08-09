@@ -95,7 +95,7 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 }
 
 
-void datawrite (const char* location, int steps, float4* h_lines){ 
+void float4write (const char* location, int steps, float4* h_lines){ 
     //write the first streamline to a file. Remember this is 32 bits when reading!
     FILE *fp;
     fp = fopen(location, "w");
@@ -103,6 +103,16 @@ void datawrite (const char* location, int steps, float4* h_lines){
         fwrite(&h_lines[i], sizeof(float4), 1, fp);
     }
     fclose(fp);
-    std::cout<<"streamline written!"<<std::endl;
+    std::cout<<"float4's written to file!"<<std::endl;
 }
 
+void floatwrite (const char* location, int steps, float* h_lines){ 
+    //write the first streamline to a file. Remember this is 32 bits when reading!
+    FILE *fp;
+    fp = fopen(location, "w");
+    for (unsigned int i = 0; i<steps; i++){   //write only the first streamline
+        fwrite(&h_lines[i], sizeof(float), 1, fp);
+    }
+    fclose(fp);
+    std::cout<<"floats written to file!"<<std::endl;
+}

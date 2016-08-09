@@ -5,5 +5,6 @@
 
 float orderSwap( float f );
 int vtkDataRead (float4* data, const char* filename, float4 &origin);
-void datawrite (const char* location, int steps, float4* h_lines);
+void float4write (const char* location, int steps, float4* h_lines);
+void floatwrite (const char* location, int steps, float* h_lines);
 #endif

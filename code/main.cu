@@ -112,15 +112,15 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	unsigned int steps = 32*blockSize;
+	unsigned int steps = 8*blockSize;
 	float dt = 1/8.0;
 
-	dim3 gridSizeRK4(2,2);
+	dim3 gridSizeRK4(8,8);
 	dim3 blockSizeRK4(8,8);
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
-	float4 startloc = make_float4(-2,0,-1,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 xvec = {2,0,0,0};
-	float4 yvec = {0,0,2,0};
+	float4 startloc = make_float4(-1.5,0,-0.75,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 xvec = {1.5,0,0,0};
+	float4 yvec = {0,0,1.5,0};
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
 	reduceSum<<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
 
 	//Dividing these windings to compute the winding numbers and store them in d_alpha
-	divide<<<1,dataCount/steps>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
+	divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
 
 	//Copy winding numbers from from device to host
 	checkCudaErrors(cudaMemcpy(h_windingdata, d_alpha, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
@@ -222,11 +222,12 @@ int main(int argc, char *argv[]) {
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
 	//Print some data to screen
-	dim3 printtest(16,16);
-	dataprint(h_windingdata,printtest);
+//	dim3 printtest(16,16);
+//	dataprint(h_windingdata,printtest);
 
 	//Write all the lines
-	datawrite("../datadir/data.bin", dataCount, h_lines);
+	float4write("../datadir/linedata.bin", dataCount, h_lines);
+	floatwrite("../datadir/windings.bin", dataCount/steps, h_windingdata);
    
 	//Free host pointers
 	free(hostvfield[0][0]);
