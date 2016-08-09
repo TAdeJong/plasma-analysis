@@ -15,6 +15,6 @@ __global__ void reduceSum( float4* g_linedata, float4* g_sumdata);
 
 __global__ void reduceSum( float* g_linedata, float* g_sumdata);
 
-__global__ void reduceNormal( float4* g_linedata, float4* g_normaldata);
+//__global__ void reduceNormal( float4* g_linedata, float4* g_normaldata);
 
 #endif
