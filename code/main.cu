@@ -142,19 +142,15 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float)));
 	h_lengths = (float*) malloc((dataCount/steps)*sizeof(float));
 
-	std::cout << "This is the empty message" << std::endl;
-
 	//Compute the length of each line (locally)
-//	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
-
-	std::cout << "One message to rule them all" << std::endl;
+	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
 
 	//Add the length of the pieces of the lines to obtain line length
 	//Stores the length of the i'th line in d_lengths[i]
-//	reduceSum<<<dataCount/steps,steps/2,(steps/2)*sizeof(float)>>>(d_lengths,d_lengths);
+	reduceSum<<<dataCount/steps,steps/2,(steps/2)*sizeof(float)>>>(d_lengths,d_lengths);
 
 	//Copy lengths from device to host
-	checkCudaErrors(cudaMemcpy(&h_lengths, d_lengths, sizeof(float), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(h_lengths, d_lengths, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 	
 	//Write all the lines
 	datawrite("../datadir/data.bin", dataCount, h_lines);
