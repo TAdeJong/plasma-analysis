@@ -125,9 +125,9 @@ int main(int argc, char *argv[]) {
 
 	//Display origin:
 	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
-	float4 normal = {0,0,0,0};
+/*	float4 normal = {0,0,0,0};
 
-/*	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
+	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
 	reduceNormal<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
 	reduceNormal<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
@@ -139,21 +139,25 @@ int main(int argc, char *argv[]) {
 
 	//Allocating the array to store the length data, both for host and device
 	float *d_lengths, *h_lengths;
-	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float4)));
+	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float)));
 	h_lengths = (float*) malloc((dataCount/steps)*sizeof(float));
 
+	std::cout << "This is the empty message" << std::endl;
+
 	//Compute the length of each line (locally)
-	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
+//	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
+
+	std::cout << "One message to rule them all" << std::endl;
 
 	//Add the length of the pieces of the lines to obtain line length
 	//Stores the length of the i'th line in d_lengths[i]
-	reduceSum<<<dataCount/steps,steps/2,(steps/2)*sizeof(float)>>>(d_lengths,d_lengths);
+//	reduceSum<<<dataCount/steps,steps/2,(steps/2)*sizeof(float)>>>(d_lengths,d_lengths);
 
 	//Copy lengths from device to host
-	checkCudaErrors(cudaMemcpy(&h_lengths, d_lengths, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(&h_lengths, d_lengths, sizeof(float), cudaMemcpyDeviceToHost));
 	
-    //Write all the lines
-    datawrite("../datadir/data.bin", dataCount, h_lines);
+	//Write all the lines
+	datawrite("../datadir/data.bin", dataCount, h_lines);
    
 	//Free host pointers
 	free(hostvfield[0][0]);
