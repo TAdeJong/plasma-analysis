@@ -5,9 +5,8 @@
 #ifndef _CONVERSIONS_H_
 #define _CONVERSIONS_H_
 __device__ int signdiff(float a, float b);
+
 __global__ void reducePC(float4* g_linedata, float4* g_PCdata);
-	
-__device__ float4 calcorigin(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication);
 
 __device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication, float4 origin);
 
