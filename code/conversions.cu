@@ -96,14 +96,12 @@ __global__ void reduceSum(float* g_linedata, float* g_sumdata) {
 
 		__syncthreads();
 	}
-	if(tid<32) {// Warp's zijn SIMD gesynchroniseerd
-		shdata[tid] += shdata[tid + 32];
-		shdata[tid] += shdata[tid + 16];
-		shdata[tid] += shdata[tid + 8];
-		shdata[tid] += shdata[tid + 4];
-		shdata[tid] += shdata[tid + 2];
-		shdata[tid] += shdata[tid + 1];
+	if(tid < s) {
+		for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
+			shdata[tid] += shdata[tid+s];
+		}
 	}
+
 	//write result to global
 	if(tid == 0) g_sumdata[blockIdx.x] = shdata[0];
 }
