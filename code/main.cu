@@ -99,8 +99,8 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	unsigned int steps = 16*blockSize;
-	float dt = 1/8.0;
+	unsigned int steps = 32*blockSize;
+	float dt = 1/4.0;
 
 	dim3 gridSizeRK4(1,1);
 	dim3 blockSizeRK4(8,8);
@@ -123,17 +123,13 @@ int main(int argc, char *argv[]) {
 
 	//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
 	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
-	reduceSum<<<1,dataCount/(4*blockSize),dataCount/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
+	reduceSum<<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
 
 	//Copy data from device to host
 	checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
 	checkCudaErrors(cudaMemcpy(&dataorigin, d_origins, sizeof(float4), cudaMemcpyDeviceToHost));
 
-	//Converts the sum from above into an average
-	dataorigin /= (float)dataCount;
 
-	//Display origin:
-	std::cout << "Origin in Smiet: " << dataorigin.x << ", " << dataorigin.y << ", " << dataorigin.z << std::endl;
 /*	float4 normal = {0,0,0,0};
 
 	//Compute the normal to the plane through the torus. Reusing previously allocated d_origins
@@ -172,27 +168,39 @@ int main(int argc, char *argv[]) {
 //	h_radii = (float*) malloc((dataCount/steps)*sizeof(float));
 
 	//Compute the length of each line (locally)
-	rxy<<<dataCount/blockSize,blockSize>>>(d_lines, d_radii, (float)steps, dataorigin);
+	rxy<<<dataCount/blockSize,blockSize>>>(d_lines, d_radii, (float)steps, d_origins);
 
 	//Add shit together per line
 	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_radii,d_radii);
 	reduceSum<<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_radii,d_radii);
 
-	float4 *d_windingdata;
-	checkCudaErrors(cudaMalloc(&d_windingdata, dataCount*sizeof(float4)));
+	float *d_alpha, *d_beta;
+	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
+	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
-	winding<<<dataCount/(2*blockSize),blockSize>>>(d_lines, d_windingdata, dataorigin, d_radii, steps);
+	winding<<<dataCount/(2*blockSize),blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
 
-	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_windingdata, d_windingdata);
-	reduceSum<<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>(d_windingdata, d_windingdata);
+	float* h_alphacheck = (float*) malloc(500*sizeof(float));
+	checkCudaErrors(cudaMemcpy(h_alphacheck, &d_beta[0], 500*sizeof(float), cudaMemcpyDeviceToHost));
 
-	float4* h_windingdata;
-	h_windingdata = (float4*) malloc((dataCount/steps)*sizeof(float4));
+
+	for(unsigned int i=0; i < 500; i++) {
+		std::cout << h_alphacheck[i] << ", ";
+	}
+	std::cout << std::endl;
+
+	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
+	reduceSum<<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_alpha, d_alpha);
+
+	reduceSum<<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_beta, d_beta);
+	reduceSum<<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
+	divide<<<gridSizeRK4,blockSizeRK4>>>(d_alpha, d_beta, d_alpha);
+	float* h_windingdata = (float*) malloc((dataCount/steps)*sizeof(float));
 	//Copy lengths from device to host
-	checkCudaErrors(cudaMemcpy(h_windingdata, d_windingdata, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(h_windingdata, d_alpha, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 	
 	//Print some data to screen
-//	dataprint(h_windingdata,blockSizeRK4);
+	dataprint(h_windingdata,blockSizeRK4);
 		
 
 	//Write all the lines
@@ -206,7 +214,8 @@ int main(int argc, char *argv[]) {
 	free(h_lengths);
 	cudaFree(d_origins);
 //	free(h_radii);
-	cudaFree(d_windingdata);
+	cudaFree(d_alpha);
+	cudaFree(d_beta);
 	free(h_windingdata);
 	cudaFree(d_radii);
 	cudaFree(d_lines);

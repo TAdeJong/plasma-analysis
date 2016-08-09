@@ -141,24 +141,25 @@ __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equiva
 	if(tid == 0) g_normaldata[blockIdx.x] = sdata[0];
 }*/
 
-__global__ void winding(float4* g_linedata, float4* g_windingdata, float4* origin, float* g_rdata, unsigned int steps) {
+__global__ void winding(float4* g_linedata, float* g_alpha, float* g_beta, float4* origin, float* g_rdata, unsigned int steps) {
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned int modifier = min(i%steps,1);
 	float r_t = g_rdata[i/steps];
 	float4 locCord = Cart2Tor(ShiftCoord(g_linedata[i], origin[i/steps]), r_t);
 	locCord -= Cart2Tor(ShiftCoord(g_linedata[i-modifier], origin[i/steps]), r_t);
 	//lelijk en langzaam, maar mijn bit-wise magic is niet genoeg om dit netjes te doen
-	if(locCord.y > PI) {
-		locCord.y -= 2*PI;
-	} else if (locCord.y< -1*PI) {
-		locCord.y += 2*PI;
+	if(locCord.y > PI/2.0) {
+		locCord.y -= PI;
+	} else if (locCord.y < -0.5*PI) {
+		locCord.y += PI;
 	}
-	if(locCord.z > PI) {
-		locCord.z -= 2*PI;
-	} else if (locCord.z < -1*PI) {
-		locCord.z += 2*PI;
+	if(locCord.z > PI/2.0) {
+		locCord.z -= PI;
+	} else if (locCord.z < -0.5*PI) {
+		locCord.z += PI;
 	}
-	g_windingdata[i] =  locCord;
+	g_alpha[i] =  locCord.y;
+	g_beta[i] =  locCord.z;
 }
 
 __global__ void divide(float* enumerator, float* denominator, float* output) {
