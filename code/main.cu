@@ -43,6 +43,15 @@ void allocarray (float4*** &hostvfield) {
 	}
 }
 
+void dataprint (float* data, dim3 Size) {
+	for(unsigned int i=0; i< Size.x; i++) {
+		for(unsigned int j=0; j< Size.y; j++) {
+			std::cout << data[Size.y*i+j] << " , ";
+		}
+		std::cout << std::endl;
+	}
+}
+
 
 
 int main(int argc, char *argv[]) {
@@ -154,13 +163,8 @@ int main(int argc, char *argv[]) {
 	//Copy lengths from device to host
 	checkCudaErrors(cudaMemcpy(h_lengths, d_lengths, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 	
-
-	for(unsigned int i=0; i< blockSizeRK4.x; i++) {
-		for(unsigned int j=0; j< blockSizeRK4.y; j++) {
-			std::cout << h_lengths[blockSizeRK4.y*i+j] << " , ";
-		}
-		std::cout << std::endl;
-	}
+	//Print some lengths to screen
+	dataprint(h_lengths,blockSizeRK4);
 		
 
 	//Write all the lines
