@@ -45,69 +45,6 @@ __global__ void reducePC(float4* g_linedata, int* g_PCdata) {
 	if(tid == 0) g_PCdata[blockIdx.x] = idata[0];
 }
 
-//Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets
-__global__ void reduceSum(float4* g_linedata, float4* g_sumdata) {
-	extern __shared__ float4 sdata[];
-
-	//load data from global data to shared mem and perform first reduction
-	unsigned int tid = threadIdx.x;
-	unsigned int i = blockIdx.x*blockDim.x*2 + threadIdx.x;
-	sdata[tid] = g_linedata[i]+g_linedata[i+blockDim.x];
-	__syncthreads();
-
-	//do the reductions
-	unsigned int s=blockDim.x/2;
-	for( ; s>32; s>>=1) {//32 = warpsize
-		if(tid < s) {
-			sdata[tid] += sdata[tid+s];
-		}
-
-		__syncthreads();
-	}
-	if(tid < s) {
-		for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
-			sdata[tid] += sdata[tid+s];
-		}
-	}
-
-	//write result to global
-	if(tid == 0) g_sumdata[blockIdx.x] = sdata[0];
-}
-
-/*	Sums all floats in g_linedata, storing the result in g_sumdata.
-	Only works for powers of 2 datasets and needs a minimum of sdata of 64*sizeof(float4) (!)
-	Identical to reduceSum for float4's, needless copying can be fixed with templates
-	but requires clever inclusions of code throughout files. Maybe to be added later.
-*/
-__global__ void reduceSum(float* g_linedata, float* g_sumdata) {
-	extern __shared__ float shdata[];
-
-	//load data from global data to shared mem and perform first reduction
-	unsigned int tid = threadIdx.x;
-	unsigned int i = blockIdx.x*blockDim.x*2 + threadIdx.x;
-	shdata[tid] = g_linedata[i]+g_linedata[i+blockDim.x];
-	__syncthreads();
-
-	//do the reductions
-	unsigned int s = blockDim.x/2;
-	for( ; s>32; s>>=1) {//32 = warpsize
-		if(tid < s) {
-			shdata[tid] += shdata[tid+s];
-		}
-
-		__syncthreads();
-	}
-	if(tid < s) {
-		for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
-			shdata[tid] += shdata[tid+s];
-		}
-	}
-
-	//write result to global
-	if(tid == 0) g_sumdata[blockIdx.x] = shdata[0];
-}
-
-
 /*	Warning: absolutely useless!
 	Mathematics is not correct, does not give normal to plane of torus!!
 		DO NOT USE

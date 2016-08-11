@@ -10,9 +10,36 @@ __global__ void reducePC(float4* g_linedata, float4* g_PCdata);
 
 __device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication, float4 origin);
 
-__global__ void reduceSum( float4* g_linedata, float4* g_sumdata);
+//Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets
+template <typename T> 
+__global__ void reduceSum(T* g_linedata, T* g_sumdata) {
+	extern __shared__ float4 extdata[];
+	T* sdata = (T*) extdata;
 
-__global__ void reduceSum( float* g_linedata, float* g_sumdata);
+	//load data from global data to shared mem and perform first reduction
+	unsigned int tid = threadIdx.x;
+	unsigned int i = blockIdx.x*blockDim.x*2 + threadIdx.x;
+	sdata[tid] = g_linedata[i]+g_linedata[i+blockDim.x];
+	__syncthreads();
+
+	//do the reductions
+	unsigned int s=blockDim.x/2;
+	for( ; s>32; s>>=1) {//32 = warpsize
+		if(tid < s) {
+			sdata[tid] += sdata[tid+s];
+		}
+
+		__syncthreads();
+	}
+	if(tid < s) {
+		for( ; s>0; s>>=1) {// Warp's zijn SIMD gesynchroniseerd Loop-unroll would require a Template-use
+			sdata[tid] += sdata[tid+s];
+		}
+	}
+
+	//write result to global
+	if(tid == 0) g_sumdata[blockIdx.x] = sdata[0];
+}
 
 __global__ void winding(float4* g_linedata ,float* g_alpha,float* g_beta, float4* origin, float* r_t, unsigned int steps);
 
