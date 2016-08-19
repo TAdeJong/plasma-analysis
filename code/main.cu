@@ -120,6 +120,7 @@ int main(int argc, char *argv[]) {
 	dim3 blockSizeRK4(8,8); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM RAM
 
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
+	std::cout << " BIGnroflines = " << BIGnroflines << std::endl;
 
 	float4 BIGstartloc = make_float4(-2.0,0,-1.0,0); //Location (in Smietcoords) to start the integration, to be varied
 	float4 BIGxvec = {2.0,0,0,0};
@@ -128,8 +129,8 @@ int main(int argc, char *argv[]) {
 	//Allocate host array for the winding numbers
 	float* h_windingdata = (float*) malloc(BIGnroflines*sizeof(float));
 
-	for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
-		for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
+	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
+		for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
 
 			float4 startloc = BIGstartloc + xindex/BIGgridSize.x * BIGxvec + yindex/BIGgridSize.y * BIGyvec;
 			float4 xvec = BIGxvec * (gridSizeRK4.x/BIGgridSize.x);
@@ -209,7 +210,7 @@ int main(int argc, char *argv[]) {
 			//r_radii are still needed, so no memory free just yet.
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-	
+
 			//Allocating arrays to store the alpha and beta data to compute winding numbers.
 			float *d_alpha, *d_beta;
 			checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
@@ -228,9 +229,15 @@ int main(int argc, char *argv[]) {
 			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
 
 			//Copy winding numbers from from device to host
-			int BIGindex = yindex*(BIGgridSize.x/gridSizeRK4.x)+xindex;
+			int BIGindex = yindex*(BIGgridSize.x/gridSizeRK4.x)/gridSizeRK4.y+xindex/gridSizeRK4.x;
+			
+/*			std::cout << "xindex = " << xindex << std::endl;
+			std::cout << "yindex = " << yindex << std::endl;
+*/			std::cout << "BIGindex = " << BIGindex << std::endl;
+
+
 			checkCudaErrors(cudaMemcpy(&(h_windingdata[BIGindex*(dataCount/steps)]), d_alpha, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
-	
+
 			cudaFree(d_alpha);
 			cudaFree(d_beta);
 			cudaFree(d_radii);
@@ -238,9 +245,6 @@ int main(int argc, char *argv[]) {
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 		   
 			//Free host pointers
-			free(hostvfield[0][0]);
-			free(hostvfield[0]);
-			free(hostvfield);
 			free(h_origins);
 			free(h_lines);
 			free(h_lengths);
@@ -248,7 +252,6 @@ int main(int argc, char *argv[]) {
 			//Free the remaining device pointers
 			cudaFree(d_origins);
 			cudaFree(d_lines);
-			cudaFreeArray(dataArray);
 		}
 	}
 
@@ -259,7 +262,14 @@ int main(int argc, char *argv[]) {
 //	float4write("../datadir/linedata.bin", BIGdataCount, h_lines);
 	floatwrite("../datadir/windings.bin", BIGnroflines, h_windingdata);
 
+
+
+	free(hostvfield[0][0]);
+	free(hostvfield[0]);
+	free(hostvfield);
+
 	free(h_windingdata);
+	cudaFreeArray(dataArray);
 
 	return 0;
 }
