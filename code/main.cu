@@ -126,17 +126,19 @@ int main(int argc, char *argv[]) {
 
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	float4 BIGstartloc = make_float4(-2.0,0,-1.0,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 BIGxvec = {2.0,0,0,0};
-	float4 BIGyvec = {0,0,2.0,0};
+	float4 BIGstartloc = make_float4(-2.0,0,-1.5,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 BIGxvec = {3.0,0,0,0};
+	float4 BIGyvec = {0,0,3.0,0};
 
 	//Allocate host array for the winding numbers
 	float* h_windingdata = (float*) malloc(BIGnroflines*sizeof(float));
 
+
+	//Start main loop.
 	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
 		for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
 
-			std::cout << "Progress was made!" << std::endl;
+			std::cout << "Progress was made! " << (yindex*BIGgridSize.x+xindex)/(float)(BIGgridSize.x*BIGgridSize.y) << std::endl;
 
 			float4 startloc = BIGstartloc + ((float)xindex/BIGgridSize.x) * BIGxvec + ((float)yindex/BIGgridSize.y) * BIGyvec;
 			float4 xvec = BIGxvec * ((float)gridSizeRK4.x/BIGgridSize.x);

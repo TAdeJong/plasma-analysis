@@ -19,7 +19,7 @@ if (len(sys.argv) < 2) :
 	print("Usage: \n dataplot.py path_to_binfile [clamp value]")
 	sys.exit()
 elif (len(sys.argv) > 2) :
-	clampVal = int(sys.argv[2])
+	clampVal = float(sys.argv[2])
 binfile = sys.argv[1]
 data=np.fromfile(binfile, dtype="float32")
 datasize = np.sqrt(data.shape[0])
@@ -28,7 +28,7 @@ data = np.minimum(data,clampVal*np.ones(data.shape))
 data = np.maximum(data,-1*clampVal*np.ones(data.shape))
 
 img = plt.imshow(data)
-#img.set_cmap('hot')
+img.set_cmap('hot')
 plt.colorbar()
 plt.show()
 
