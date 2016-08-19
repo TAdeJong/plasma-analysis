@@ -14,13 +14,18 @@ def loadCudaStream(name):
     data=data.reshape(int(len(data)/4), 4)
     data=np.delete(data,3,1)
     return data
-#
+clampVal = 1;
+if (len(sys.argv) < 2) :
+	print("Usage: \n dataplot.py path_to_binfile [clamp value]")
+	sys.exit()
+elif (len(sys.argv) > 2) :
+	clampVal = int(sys.argv[2])
 binfile = sys.argv[1]
 data=np.fromfile(binfile, dtype="float32")
 datasize = np.sqrt(data.shape[0])
 data=data.reshape(datasize, datasize)
-data = np.minimum(data,1*np.ones(data.shape))
-data = np.maximum(data,-1*np.ones(data.shape))
+data = np.minimum(data,clampVal*np.ones(data.shape))
+data = np.maximum(data,-1*clampVal*np.ones(data.shape))
 
 img = plt.imshow(data)
 #img.set_cmap('hot')
