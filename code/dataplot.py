@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import sys
 
 def loadCudaStream(name):
     """
@@ -14,7 +15,8 @@ def loadCudaStream(name):
     data=np.delete(data,3,1)
     return data
 #
-data=np.fromfile("../datadir/windings1.bin", dtype="float32")
+binfile = sys.argv[1]
+data=np.fromfile(binfile, dtype="float32")
 datasize = np.sqrt(data.shape[0])
 data=data.reshape(datasize, datasize)
 data = np.minimum(data,1*np.ones(data.shape))
