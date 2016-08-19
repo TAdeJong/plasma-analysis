@@ -14,10 +14,11 @@ def loadCudaStream(name):
     data=np.delete(data,3,1)
     return data
 #
-data=np.fromfile("../datadir/windings.bin", dtype="float32")
-data=data.reshape(64, 64)
-data = np.minimum(data,10*np.ones(data.shape))
-data = np.maximum(data,-10*np.ones(data.shape))
+data=np.fromfile("../datadir/windings1.bin", dtype="float32")
+datasize = np.sqrt(data.shape[0])
+data=data.reshape(datasize, datasize)
+data = np.minimum(data,1*np.ones(data.shape))
+data = np.maximum(data,-1*np.ones(data.shape))
 
 img = plt.imshow(data)
 #img.set_cmap('hot')
