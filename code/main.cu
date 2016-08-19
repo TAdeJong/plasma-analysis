@@ -229,18 +229,21 @@ int main(int argc, char *argv[]) {
 			//Dividing these windings to compute the winding numbers and store them in d_alpha
 			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
 
-			//Copy winding numbers from from device to host
-			int globaloffset = yindex*BIGgridSize.x*blockSizeRK4.x+xindex;
-			
-/*			std::cout << "xindex = " << xindex << std::endl;
-			std::cout << "yindex = " << yindex << std::endl;
-*/
-
 			//Copying the windingdata line-by-line back to the host
+			int globaloffset = yindex*blockSizeRK4.y*BIGgridSize.x*blockSizeRK4.x+xindex*blockSizeRK4.x;
+			std::cout << "globaloffset = " <<  globaloffset << std::endl;
+			
+			std::cout << "xindex = " << xindex << std::endl;
+			std::cout << "yindex = " << yindex << std::endl;
+
 			int hsize = gridSizeRK4.x*blockSizeRK4.x;
 			int vsize = gridSizeRK4.y*blockSizeRK4.y;
+
+			std::cout << "BIGhsize = " << BIGgridSize.x*blockSizeRK4.x << std::endl;
+			std::cout << "hsize = " << hsize << std::endl;
+		
 			for(int ylocal = 0; ylocal < vsize; ylocal++) {
-				checkCudaErrors(cudaMemcpy(&(h_windingdata[globaloffset+yindex*BIGgridSize.x*blockSizeRK4.x]), &(d_alpha[ylocal*hsize]), hsize*sizeof(float), cudaMemcpyDeviceToHost));
+				checkCudaErrors(cudaMemcpy(&(h_windingdata[globaloffset+ylocal*BIGgridSize.x*blockSizeRK4.x]), &(d_alpha[ylocal*hsize]), hsize*sizeof(float), cudaMemcpyDeviceToHost));
 			}
 
 			cudaFree(d_alpha);
