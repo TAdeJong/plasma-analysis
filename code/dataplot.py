@@ -16,7 +16,8 @@ def loadCudaStream(name):
 #
 data=np.fromfile("../datadir/windings.bin", dtype="float32")
 data=data.reshape(64, 64)
-print data
+data = np.minimum(data,10*np.ones(data.shape))
+data = np.maximum(data,-10*np.ones(data.shape))
 
 img = plt.imshow(data)
 #img.set_cmap('hot')
