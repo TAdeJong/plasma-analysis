@@ -233,6 +233,9 @@ int main(int argc, char *argv[]) {
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_alpha, d_alpha);
+			std::cout << "2.3: " << printalpha << std::endl;
+			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "2.4: " << printalpha << std::endl;
 
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_beta, d_beta);
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
