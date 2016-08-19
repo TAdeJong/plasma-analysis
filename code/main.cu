@@ -216,8 +216,19 @@ int main(int argc, char *argv[]) {
 			float *d_alpha, *d_beta;
 			checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
 			checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
+			
+			float printalpha = 0;
+			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "1: " << printalpha << std::endl;
+			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "2: " << printalpha << std::endl;
 
 			winding<<<dataCount/blockSize,blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
+
+			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "3: " << printalpha << std::endl;
+			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "4: " << printalpha << std::endl;
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
