@@ -112,136 +112,155 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	unsigned int steps = 8*blockSize;
+	unsigned int steps = 4*blockSize;
 	float dt = 1/8.0;
 
-	dim3 gridSizeRK4(8,8);
-	dim3 blockSizeRK4(8,8);
-	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
-	float4 startloc = make_float4(-1.5,0,-0.75,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 xvec = {1.5,0,0,0};
-	float4 yvec = {0,0,1.5,0};
+	dim3 BIGgridSize(128,128);
+	dim3 gridSizeRK4(16,16);
+	dim3 blockSizeRK4(8,8); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM RAM
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	//Allocate space on device to store integration output
-	checkCudaErrors(cudaMalloc(&d_lines, dataCount*sizeof(float4)));
+	float4 BIGstartloc = make_float4(-2.0,0,-1.0,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 BIGxvec = {2.0,0,0,0};
+	float4 BIGyvec = {0,0,2.0,0};
 
-	//Allocate space on host to store integration output
-	h_lines = (float4*) malloc(dataCount*sizeof(float4));
+	//Allocate host array for the winding numbers
+	float* h_windingdata = (float*) malloc(BIGnroflines*sizeof(float));
 
-	//Integrate the vector field
-	RK4line<<<gridSizeRK4,blockSizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec);
+	for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
+		for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
 
-	//Copy data from device to host
-	checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
+			float4 startloc = BIGstartloc + xindex/BIGgridSize.x * BIGxvec + yindex/BIGgridSize.y * BIGyvec;
+			float4 xvec = BIGxvec * (gridSizeRK4.x/BIGgridSize.x);
+			float4 yvec = BIGyvec * (gridSizeRK4.y/BIGgridSize.y);
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-
-	//Allocate space to store origin data
-
-	float4 *d_origins, *h_origins;
-	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
-	h_origins = (float4*) malloc((dataCount/steps) * sizeof(float4));
-
-	//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
-	reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
-	reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
-	divide<<<1,dataCount/steps>>>(d_origins,(float)steps, d_origins);//not size-scalable!!!
-
-	//Copy origin data from device to host
-	checkCudaErrors(cudaMemcpy(h_origins, d_origins, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-
-	//Allocating the array to store the length data, both for host and device
-	float *d_lengths, *h_lengths;
-	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float)));
-	h_lengths = (float*) malloc((dataCount/steps)*sizeof(float));
-
-	//Compute the length of each line (locally)
-	lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
-
-	//Add the length of the pieces of the lines to obtain line length
-	//Stores the length of the i'th line in d_lengths[i]
-	reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_lengths,d_lengths);
-	reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_lengths,d_lengths);
-
-	//Copy lengths from device to host
-	checkCudaErrors(cudaMemcpy(h_lengths, d_lengths, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
-
-	cudaFree(d_lengths);
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-
-	//Allocating the array to store the radius data, both for host and device
-	float *d_radii, *h_radii;
-	checkCudaErrors(cudaMalloc(&d_radii, dataCount*sizeof(float)));
-	h_radii = (float*) malloc((dataCount/steps)*sizeof(float));
+			int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 
 
-	//Compute the distance from the origin in the xy plane of each point
-	rxy<<<dataCount/blockSize,blockSize>>>(d_lines, d_radii, (float)steps, d_origins, steps);
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
-	//Average these distances to find the torus radius
-	reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_radii,d_radii);
-	reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_radii,d_radii);
+			//Allocate space on device to store integration output
+			checkCudaErrors(cudaMalloc(&d_lines, dataCount*sizeof(float4)));
 
-	//Copy radii from device to host
-	checkCudaErrors(cudaMemcpy(h_radii, d_radii, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+			//Allocate space on host to store integration output
+			h_lines = (float4*) malloc(dataCount*sizeof(float4));
 
-	//r_radii are still needed, so no memory free just yet.
+			//Integrate the vector field
+			RK4line<<<gridSizeRK4,blockSizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec);
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+			//Copy data from device to host
+			checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
+
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+
+			//Allocate space to store origin data
+
+			float4 *d_origins, *h_origins;
+			checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
+			h_origins = (float4*) malloc((dataCount/steps) * sizeof(float4));
+
+			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
+			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
+			reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
+			divide<<<1,dataCount/steps>>>(d_origins,(float)steps, d_origins);//not size-scalable!!!
+
+			//Copy origin data from device to host
+			checkCudaErrors(cudaMemcpy(h_origins, d_origins, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
+
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+
+			//Allocating the array to store the length data, both for host and device
+			float *d_lengths, *h_lengths;
+			checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float)));
+			h_lengths = (float*) malloc((dataCount/steps)*sizeof(float));
+
+			//Compute the length of each line (locally)
+			lineLength<<<dataCount/blockSize,blockSize>>>(d_lines, dt, d_lengths);
+
+			//Add the length of the pieces of the lines to obtain line length
+			//Stores the length of the i'th line in d_lengths[i]
+			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_lengths,d_lengths);
+			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_lengths,d_lengths);
+
+			//Copy lengths from device to host
+			checkCudaErrors(cudaMemcpy(h_lengths, d_lengths, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+
+			cudaFree(d_lengths);
+
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+
+			//Allocating the array to store the radius data, both for host and device
+			float *d_radii, *h_radii;
+			checkCudaErrors(cudaMalloc(&d_radii, dataCount*sizeof(float)));
+			h_radii = (float*) malloc((dataCount/steps)*sizeof(float));
+
+
+			//Compute the distance from the origin in the xy plane of each point
+			rxy<<<dataCount/blockSize,blockSize>>>(d_lines, d_radii, (float)steps, d_origins, steps);
+
+			//Average these distances to find the torus radius
+			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_radii,d_radii);
+			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_radii,d_radii);
+
+			//Copy radii from device to host
+			checkCudaErrors(cudaMemcpy(h_radii, d_radii, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+
+			//r_radii are still needed, so no memory free just yet.
+
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 	
-	//Allocating arrays to store the alpha and beta data to compute winding numbers.
-	float* h_windingdata = (float*) malloc((dataCount/steps)*sizeof(float));
-	float *d_alpha, *d_beta;
-	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
-	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
+			//Allocating arrays to store the alpha and beta data to compute winding numbers.
+			float *d_alpha, *d_beta;
+			checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
+			checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
-	winding<<<dataCount/blockSize,blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
+			winding<<<dataCount/blockSize,blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
 
-	//Adding the steps Deltaalpha and Deltabeta to find overall windings
-	reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
-	reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_alpha, d_alpha);
+			//Adding the steps Deltaalpha and Deltabeta to find overall windings
+			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
+			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_alpha, d_alpha);
 
-	reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_beta, d_beta);
-	reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
+			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_beta, d_beta);
+			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
 
-	//Dividing these windings to compute the winding numbers and store them in d_alpha
-	divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
+			//Dividing these windings to compute the winding numbers and store them in d_alpha
+			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
 
-	//Copy winding numbers from from device to host
-	checkCudaErrors(cudaMemcpy(h_windingdata, d_alpha, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+			//Copy winding numbers from from device to host
+			int BIGindex = yindex*(BIGgridSize.x/gridSizeRK4.x)+xindex;
+			checkCudaErrors(cudaMemcpy(&(h_windingdata[BIGindex*(dataCount/steps)]), d_alpha, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 	
-	cudaFree(d_alpha);
-	cudaFree(d_beta);
-	cudaFree(d_radii);
+			cudaFree(d_alpha);
+			cudaFree(d_beta);
+			cudaFree(d_radii);
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+		   
+			//Free host pointers
+			free(hostvfield[0][0]);
+			free(hostvfield[0]);
+			free(hostvfield);
+			free(h_origins);
+			free(h_lines);
+			free(h_lengths);
 
-	//Print some data to screen
-//	dim3 printtest(16,16);
-//	dataprint(h_windingdata,printtest);
+			//Free the remaining device pointers
+			cudaFree(d_origins);
+			cudaFree(d_lines);
+			cudaFreeArray(dataArray);
+		}
+	}
 
-	//Write all the lines
-	float4write("../datadir/linedata.bin", dataCount, h_lines);
-	floatwrite("../datadir/windings.bin", dataCount/steps, h_windingdata);
-   
-	//Free host pointers
-	free(hostvfield[0][0]);
-	free(hostvfield[0]);
-	free(hostvfield);
-	free(h_origins);
-	free(h_lines);
-	free(h_lengths);
+//Print some data to screen
+	//	dim3 printtest(16,16);
+	//	dataprint(h_windingdata,printtest);
+//Write some data
+//	float4write("../datadir/linedata.bin", BIGdataCount, h_lines);
+	floatwrite("../datadir/windings.bin", BIGnroflines, h_windingdata);
+
 	free(h_windingdata);
 
-	//Free the remaining device pointers
-	cudaFree(d_origins);
-	cudaFree(d_lines);
-	cudaFreeArray(dataArray);
 	return 0;
 }
 
