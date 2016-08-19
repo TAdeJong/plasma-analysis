@@ -216,19 +216,8 @@ int main(int argc, char *argv[]) {
 			float *d_alpha, *d_beta;
 			checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
 			checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
-			
-			float printalpha = 0;
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "1: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "2: " << printalpha << std::endl;
 
 			winding<<<dataCount/blockSize,blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
-
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "3: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "4: " << printalpha << std::endl;
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
@@ -237,8 +226,19 @@ int main(int argc, char *argv[]) {
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_beta, d_beta);
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
 
+			float printalpha = 0;
+			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "1: " << printalpha << std::endl;
+			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "2: " << printalpha << std::endl;
+
 			//Dividing these windings to compute the winding numbers and store them in d_alpha
 			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
+
+			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "3: " << printalpha << std::endl;
+			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
+			std::cout << "4: " << printalpha << std::endl;
 
 			//Copying the windingdata line-by-line back to the host
 			int globaloffset = yindex*blockSizeRK4.y*BIGgridSize.x*blockSizeRK4.x+xindex*blockSizeRK4.x;
