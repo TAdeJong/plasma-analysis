@@ -63,6 +63,11 @@ void dataprint (float4* data, dim3 Size) {
 
 int main(int argc, char *argv[]) {
 
+	struct cudaDeviceProp properties;
+	cudaGetDeviceProperties(&properties, 0);
+	std::cout<<"using "<<properties.multiProcessorCount<<" multiprocessors"<<std::endl;
+	std::cout<<"max threads per processor: "<<properties.maxThreadsPerMultiProcessor<<std::endl;
+
 	//Check if the input is sensible
 
 	if (argc == 1) {
@@ -138,7 +143,7 @@ int main(int argc, char *argv[]) {
 			float4 yvec = BIGyvec * (gridSizeRK4.y/BIGgridSize.y);
 
 			int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
-
+			std::cout << "dataCount = " << dataCount << std::endl;
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -165,7 +170,7 @@ int main(int argc, char *argv[]) {
 			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
 			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>(d_lines, d_origins);
 			reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>(d_origins, d_origins);
-			divide<<<1,dataCount/steps>>>(d_origins,(float)steps, d_origins);//not size-scalable!!!
+			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_origins,(float)steps, d_origins);//not size-scalable!!!
 
 			//Copy origin data from device to host
 			checkCudaErrors(cudaMemcpy(h_origins, d_origins, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
