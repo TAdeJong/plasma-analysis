@@ -120,12 +120,11 @@ int main(int argc, char *argv[]) {
 	unsigned int steps = 4*blockSize;
 	float dt = 1/8.0;
 
-	dim3 BIGgridSize(32,32);
+	dim3 BIGgridSize(256,256);
 	dim3 gridSizeRK4(16,16);
 	dim3 blockSizeRK4(8,8); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM RAM
 
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
-	std::cout << " BIGnroflines = " << BIGnroflines << std::endl;
 
 	float4 BIGstartloc = make_float4(-2.0,0,-1.0,0); //Location (in Smietcoords) to start the integration, to be varied
 	float4 BIGxvec = {2.0,0,0,0};
@@ -137,13 +136,13 @@ int main(int argc, char *argv[]) {
 	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
 		for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
 
+			std::cout << "Progress was made!" << std::endl;
 
 			float4 startloc = BIGstartloc + ((float)xindex/BIGgridSize.x) * BIGxvec + ((float)yindex/BIGgridSize.y) * BIGyvec;
-			float4 xvec = BIGxvec * (gridSizeRK4.x/BIGgridSize.x);
-			float4 yvec = BIGyvec * (gridSizeRK4.y/BIGgridSize.y);
+			float4 xvec = BIGxvec * ((float)gridSizeRK4.x/BIGgridSize.x);
+			float4 yvec = BIGyvec * ((float)gridSizeRK4.y/BIGgridSize.y);
 
 			int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
-			std::cout << "dataCount = " << dataCount << std::endl;
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -222,58 +221,23 @@ int main(int argc, char *argv[]) {
 			checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
 			checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
-			float printalpha = 0;
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "1.1: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "1.2: " << printalpha << std::endl;
-
 			winding<<<dataCount/blockSize,blockSize>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
-
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "2.1: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "2.2: " << printalpha << std::endl;
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_alpha, d_alpha);
-
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "2.3: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "2.4: " << printalpha << std::endl;
-
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_alpha, d_alpha);
 
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>(d_beta, d_beta);
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_beta, d_beta);
 
-
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "3.1: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "3.2: " << printalpha << std::endl;
-
 			//Dividing these windings to compute the winding numbers and store them in d_alpha
 			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
 
-			checkCudaErrors(cudaMemcpy(&printalpha, d_alpha, sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "4.1: " << printalpha << std::endl;
-			checkCudaErrors(cudaMemcpy(&printalpha, &(d_alpha[1000]), sizeof(float), cudaMemcpyDeviceToHost));
-			std::cout << "4.2: " << printalpha << std::endl;
-
 			//Copying the windingdata line-by-line back to the host
 			int globaloffset = yindex*blockSizeRK4.y*BIGgridSize.x*blockSizeRK4.x+xindex*blockSizeRK4.x;
-			std::cout << "globaloffset = " <<  globaloffset << std::endl;
-			
-			std::cout << "xindex = " << xindex << std::endl;
-			std::cout << "yindex = " << yindex << std::endl;
 
 			int hsize = gridSizeRK4.x*blockSizeRK4.x;
 			int vsize = gridSizeRK4.y*blockSizeRK4.y;
-
-			std::cout << "BIGhsize = " << BIGgridSize.x*blockSizeRK4.x << std::endl;
-			std::cout << "hsize = " << hsize << std::endl;
 		
 			for(int ylocal = 0; ylocal < vsize; ylocal++) {
 				checkCudaErrors(cudaMemcpy(&(h_windingdata[globaloffset+ylocal*BIGgridSize.x*blockSizeRK4.x]), &(d_alpha[ylocal*hsize]), hsize*sizeof(float), cudaMemcpyDeviceToHost));
