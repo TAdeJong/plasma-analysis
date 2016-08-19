@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 	unsigned int steps = 4*blockSize;
 	float dt = 1/8.0;
 
-	dim3 BIGgridSize(128,128);
+	dim3 BIGgridSize(32,32);
 	dim3 gridSizeRK4(16,16);
 	dim3 blockSizeRK4(8,8); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM RAM
 
@@ -132,7 +132,8 @@ int main(int argc, char *argv[]) {
 	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
 		for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
 
-			float4 startloc = BIGstartloc + xindex/BIGgridSize.x * BIGxvec + yindex/BIGgridSize.y * BIGyvec;
+
+			float4 startloc = BIGstartloc + ((float)xindex/BIGgridSize.x) * BIGxvec + ((float)yindex/BIGgridSize.y) * BIGyvec;
 			float4 xvec = BIGxvec * (gridSizeRK4.x/BIGgridSize.x);
 			float4 yvec = BIGyvec * (gridSizeRK4.y/BIGgridSize.y);
 
