@@ -230,14 +230,18 @@ int main(int argc, char *argv[]) {
 			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_alpha, d_beta, d_alpha);//Not Scalable!!!
 
 			//Copy winding numbers from from device to host
-			int BIGindex = yindex*(BIGgridSize.x/gridSizeRK4.x)/gridSizeRK4.y+xindex/gridSizeRK4.x;
+			int globaloffset = yindex*BIGgridSize.x*blockSizeRK4.x+xindex;
 			
 /*			std::cout << "xindex = " << xindex << std::endl;
 			std::cout << "yindex = " << yindex << std::endl;
-*/			std::cout << "BIGindex = " << BIGindex << std::endl;
+*/
 
-
-			checkCudaErrors(cudaMemcpy(&(h_windingdata[BIGindex*(dataCount/steps)]), d_alpha, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+			//Copying the windingdata line-by-line back to the host
+			int hsize = gridSizeRK4.x*blockSizeRK4.x;
+			int vsize = gridSizeRK4.y*blockSizeRK4.y;
+			for(int ylocal = 0; ylocal < vsize; ylocal++) {
+				checkCudaErrors(cudaMemcpy(&(h_windingdata[globaloffset+yindex*BIGgridSize.x*blockSizeRK4.x]), &(d_alpha[ylocal*hsize]), hsize*sizeof(float), cudaMemcpyDeviceToHost));
+			}
 
 			cudaFree(d_alpha);
 			cudaFree(d_beta);
