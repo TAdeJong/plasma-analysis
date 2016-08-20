@@ -69,10 +69,15 @@ int main(int argc, char *argv[]) {
 	std::cout<<"max threads per processor: "<<properties.maxThreadsPerMultiProcessor<<std::endl;
 
 	//Check if the input is sensible
-
+	std::string name;
 	if (argc == 1) {
 		std::cout << "Please specify as an argument the path to the .vtk file to use"  << std::endl;
 		return 1;
+	} else {
+		name = argv[1];
+	}
+	if (name.rfind(".vtk") == -1) {
+		name.append(".vtk");
 	}
 	//Allocate data array on host
 	float4*** hostvfield;
@@ -80,7 +85,7 @@ int main(int argc, char *argv[]) {
 
 	//Read data from file specified as argument
 	float4 dataorigin = {0,0,0,0};
-	vtkDataRead(hostvfield[0][0],argv[1], dataorigin);
+	vtkDataRead(hostvfield[0][0], name.c_str(), dataorigin);
 	if(dataorigin.x != origin || dataorigin.y != origin || dataorigin.z != origin) {
 		std::cout << "Warning: origin read from file not equal to origin from constants.h" << std::endl;
 	}
@@ -138,8 +143,8 @@ int main(int argc, char *argv[]) {
 	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
 		for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
 
-			std::cout << "Progress was made! " << (yindex*BIGgridSize.x+xindex)/(float)(BIGgridSize.x*BIGgridSize.y) << std::endl;
-
+//			std::cout << "Progress was made! " << (yindex*BIGgridSize.x+xindex)/(float)(BIGgridSize.x*BIGgridSize.y) << std::endl;
+			std::cout << "x" << std::flush;
 			float4 startloc = BIGstartloc + ((float)xindex/BIGgridSize.x) * BIGxvec + ((float)yindex/BIGgridSize.y) * BIGyvec;
 			float4 xvec = BIGxvec * ((float)gridSizeRK4.x/BIGgridSize.x);
 			float4 yvec = BIGyvec * ((float)gridSizeRK4.y/BIGgridSize.y);
@@ -260,6 +265,7 @@ int main(int argc, char *argv[]) {
 			cudaFree(d_origins);
 			cudaFree(d_lines);
 		}
+		std::cout << std::endl;
 	}
 
 //Print some data to screen
@@ -267,7 +273,11 @@ int main(int argc, char *argv[]) {
 	//	dataprint(h_windingdata,printtest);
 //Write some data
 //	float4write("../datadir/linedata.bin", BIGdataCount, h_lines);
-	floatwrite("../datadir/windings.bin", BIGnroflines, h_windingdata);
+	name = name.substr(name.rfind("/")+1,name.rfind(".")-name.rfind("/")-1);
+	const std::string prefix = "../datadir/";
+	const std::string suffix = "_windings.bin";
+	const std::string path = prefix+name+suffix;
+	floatwrite(path.c_str(), BIGnroflines, h_windingdata);
 
 
 

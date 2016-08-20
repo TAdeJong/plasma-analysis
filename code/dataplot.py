@@ -28,7 +28,8 @@ data = np.minimum(data,clampVal*np.ones(data.shape))
 data = np.maximum(data,-1*clampVal*np.ones(data.shape))
 
 img = plt.imshow(data)
-img.set_cmap('hot')
+#img.set_cmap('hot')
 plt.colorbar()
-plt.show()
+# plt.show()
+plt.savefig(sys.argv[1].rsplit(".",1)[0]+'_fig.png')
 

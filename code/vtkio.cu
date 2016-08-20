@@ -89,7 +89,7 @@ int vtkDataRead (float4* data, const char* filename, float4 &origin) {
 		fread(datapoint, sizeof(float), 3, dfp);
 		data[i] = make_float4(orderSwap(datapoint[0]),orderSwap(datapoint[1]),orderSwap(datapoint[2]),0);
 	}
-	std::cout << "Data read in was successful!" << std::endl;
+	std::cout << "Data has been read in from '"<< filename  << "'." << std::endl;
 	fclose(dfp);
 	return 0;
 }
@@ -103,7 +103,7 @@ void float4write (const char* location, int steps, float4* h_lines){
         fwrite(&h_lines[i], sizeof(float4), 1, fp);
     }
     fclose(fp);
-    std::cout<<"float4's written to file!"<<std::endl;
+    std::cout<<"Float4's written to: '"<< location << "'" << std::endl;
 }
 
 void floatwrite (const char* location, int steps, float* h_lines){ 
@@ -114,5 +114,5 @@ void floatwrite (const char* location, int steps, float* h_lines){
         fwrite(&h_lines[i], sizeof(float), 1, fp);
     }
     fclose(fp);
-    std::cout<<"floats written to file!"<<std::endl;
+    std::cout<<"Float's written to: '"<< location << "'" << std::endl;
 }
