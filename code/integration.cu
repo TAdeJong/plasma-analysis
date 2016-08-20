@@ -22,16 +22,15 @@ __device__ float4 RK4step(float4 loc, double dt) {
 	with corner startloc and sides xvec and yvec (modulo off-by-one). The output
 	array lineoutput is linear, and consists of blocks of size 'steps' each containing 1 line
 */
-__global__ void RK4line(float4* lineoutput, double dt, unsigned int steps, float4 startloc, float4 xvec, float4 yvec) {
+__global__ void RK4line(float4* lineoutput, double dt, const unsigned int steps, float4 startloc, float4 xvec, float4 yvec) {
 	dim3 index2D(threadIdx.x + blockIdx.x * blockDim.x, threadIdx.y + blockIdx.y*blockDim.y);
 	float4 dx = (1.0/(gridDim.x*blockDim.x))*xvec;
 	float4 dy = (1.0/(gridDim.y*blockDim.y))*yvec;
 	float4 loc = startloc + index2D.x*dx + index2D.y*dy;
 	int index = index2D.y*(gridDim.x*blockDim.x) + index2D.x;
-	lineoutput[index*steps] = loc;
-	for (unsigned int i=1; i < steps; i++) {
-		loc = loc + RK4step(loc, dt);
+	for (unsigned int i=0; i < steps; i++) {
 		lineoutput[index*steps + i] = loc;
+		loc = loc + RK4step(loc, dt);
 	}
 	return;
 }
