@@ -22,7 +22,7 @@ elif (len(sys.argv) > 2) :
 	clampVal = float(sys.argv[2])
 binfile = sys.argv[1]
 data=np.fromfile(binfile, dtype="float32")
-datasize = np.sqrt(data.shape[0])
+datasize = int(np.sqrt(data.shape[0]))
 data=data.reshape(datasize, datasize)
 data = np.minimum(data,clampVal*np.ones(data.shape))
 data = np.maximum(data,-1*clampVal*np.ones(data.shape))

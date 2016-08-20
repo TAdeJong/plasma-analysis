@@ -106,7 +106,11 @@ int main(int argc, char *argv[]) {
 
 	//Copy data (originally from the vtk) to device
 	cudaMemcpy3DParms copyParms = {0};
-	copyParms.srcPtr = make_cudaPitchedPtr((void *)hostvfield[0][0], extent.width*sizeof(float4), extent.height, extent.depth);
+	copyParms.srcPtr = make_cudaPitchedPtr((void *)hostvfield[0][0],
+		   	extent.width*sizeof(float4),
+		   	extent.height,
+		   	extent.depth
+			);
 	copyParms.dstArray = dataArray;
 	copyParms.extent = extent;
 	copyParms.kind = cudaMemcpyHostToDevice;
@@ -127,7 +131,7 @@ int main(int argc, char *argv[]) {
 
 	dim3 BIGgridSize(256,256);
 	dim3 gridSizeRK4(16,16);
-	dim3 blockSizeRK4(8,8); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM RAM
+	dim3 blockSizeRK4(8,8); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM VRAM
 
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
@@ -163,7 +167,7 @@ int main(int argc, char *argv[]) {
 			RK4line<<<gridSizeRK4,blockSizeRK4>>>(d_lines, dt, steps, startloc, xvec, yvec);
 
 			//Copy data from device to host
-			checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
+//			checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -179,7 +183,7 @@ int main(int argc, char *argv[]) {
 			divide<<<dataCount/(steps*blockSize),blockSize>>>(d_origins,(float)steps, d_origins);//not size-scalable!!!
 
 			//Copy origin data from device to host
-			checkCudaErrors(cudaMemcpy(h_origins, d_origins, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
+//			checkCudaErrors(cudaMemcpy(h_origins, d_origins, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -197,7 +201,7 @@ int main(int argc, char *argv[]) {
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_lengths,d_lengths);
 
 			//Copy lengths from device to host
-			checkCudaErrors(cudaMemcpy(h_lengths, d_lengths, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+//			checkCudaErrors(cudaMemcpy(h_lengths, d_lengths, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 
 			cudaFree(d_lengths);
 
@@ -217,7 +221,7 @@ int main(int argc, char *argv[]) {
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>(d_radii,d_radii);
 
 			//Copy radii from device to host
-			checkCudaErrors(cudaMemcpy(h_radii, d_radii, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
+//			checkCudaErrors(cudaMemcpy(h_radii, d_radii, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 
 			//r_radii are still needed, so no memory free just yet.
 
@@ -246,9 +250,18 @@ int main(int argc, char *argv[]) {
 			int hsize = gridSizeRK4.x*blockSizeRK4.x;
 			int vsize = gridSizeRK4.y*blockSizeRK4.y;
 		
-			for(int ylocal = 0; ylocal < vsize; ylocal++) {
+/*			for(int ylocal = 0; ylocal < vsize; ylocal++) {
 				checkCudaErrors(cudaMemcpy(&(h_windingdata[globaloffset+ylocal*BIGgridSize.x*blockSizeRK4.x]), &(d_alpha[ylocal*hsize]), hsize*sizeof(float), cudaMemcpyDeviceToHost));
-			}
+			}*/
+			checkCudaErrors(cudaMemcpy2D(
+						&(h_windingdata[globaloffset]),
+						BIGgridSize.x*blockSizeRK4.x*sizeof(float),
+					   	d_alpha,
+						hsize*sizeof(float), 
+						hsize*sizeof(float), 
+						vsize, 
+						cudaMemcpyDeviceToHost
+						));
 
 			cudaFree(d_alpha);
 			cudaFree(d_beta);
