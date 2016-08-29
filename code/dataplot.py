@@ -24,12 +24,12 @@ binfile = sys.argv[1]
 data=np.fromfile(binfile, dtype="float32")
 datasize = int(np.sqrt(data.shape[0]))
 data=data.reshape(datasize, datasize)
-data = np.minimum(data,clampVal*np.ones(data.shape))
-data = np.maximum(data,-1*clampVal*np.ones(data.shape))
+data = np.minimum(data,1.0*clampVal*np.ones(data.shape))
+data = np.maximum(data,-1.0*clampVal*np.ones(data.shape))
 
 img = plt.imshow(data)
 #img.set_cmap('hot')
 plt.colorbar()
-# plt.show()
-plt.savefig(sys.argv[1].rsplit(".",1)[0]+'_fig.png')
+plt.show()
+# plt.savefig(sys.argv[1].rsplit(".",1)[0]+'_fig.png')
 

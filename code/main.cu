@@ -126,17 +126,17 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	unsigned int steps = 4*blockSize;
+	unsigned int steps = 32*blockSize;
 	float dt = 1/8.0;
 
 	dim3 BIGgridSize(64,64);
-	dim3 gridSizeRK4(8,8);
+	dim3 gridSizeRK4(4,4);
 	dim3 blockSizeRK4(16,16); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM VRAM
 
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	float4 BIGstartloc = make_float4(-2.0,0,-1.5,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 BIGstartloc = make_float4(-1.0,0,-1.5,0); //Location (in Smietcoords) to start the integration, to be varied
 	float4 BIGxvec = {3.0,0,0,0};
 	float4 BIGyvec = {0,0,3.0,0};
 
@@ -279,7 +279,9 @@ int main(int argc, char *argv[]) {
 
 			//Dividing these windings to compute the winding numbers and store them in d_alpha
 			divide<<<dataCount/(steps*blockSize),blockSize,0,windings2>>>
-				(d_alpha, d_beta, d_alpha);//Not Scalable!!!
+				(d_beta, d_alpha, d_alpha);//Not Scalable!!!
+
+			//Insert out-of-bound-check here to remove erronous winding numbers
 
 			//Copying the windingdata line-by-line back to the host
 			int globaloffset = yindex*blockSizeRK4.y*BIGgridSize.x*blockSizeRK4.x+xindex*blockSizeRK4.x;
