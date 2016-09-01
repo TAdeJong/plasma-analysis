@@ -153,19 +153,19 @@ int main(int argc, char *argv[]) {
 	//Allocate space to store origin data
 	float4 *d_origins, *h_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
-	h_origins = (float4*) malloc((dataCount/steps) * sizeof(float4));
+//	h_origins = (float4*) malloc(BIGnroflines * sizeof(float4));
 
 	//Allocating the array to store the length data, both for host and device
 	float *d_lengths, *h_lengths;
 	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float)));
-	status = cudaMallocHost((void**)&h_lengths, (dataCount/steps)*sizeof(float));
+	status = cudaMallocHost((void**)&h_lengths, BIGnroflines*sizeof(float));
 	if (status != cudaSuccess)
 		printf("Error allocating pinned host memory.\n");
 
 	//Allocating the array to store the radius data, both for host and device
 	float *d_radii, *h_radii;
 	checkCudaErrors(cudaMalloc(&d_radii, dataCount*sizeof(float)));
-	h_radii = (float*) malloc((dataCount/steps)*sizeof(float));
+//	h_radii = (float*) malloc(BIGnroflines*sizeof(float));
 
 	//Allocating arrays to store the alpha and beta data to compute winding numbers.
 	float *d_alpha, *d_beta;
@@ -186,12 +186,15 @@ int main(int argc, char *argv[]) {
 	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
 		for (int xindex = 0; xindex < BIGgridSize.x; xindex += gridSizeRK4.x) {
 
-//			std::cout << "Progress was made! " << (yindex*BIGgridSize.x+xindex)/(float)(BIGgridSize.x*BIGgridSize.y) << std::endl;
 			std::cout << "x" << std::flush;
 			float4 startloc = BIGstartloc + ((float)xindex/BIGgridSize.x) * BIGxvec + ((float)yindex/BIGgridSize.y) * BIGyvec;
 			float4 xvec = BIGxvec * ((float)gridSizeRK4.x/BIGgridSize.x);
 			float4 yvec = BIGyvec * ((float)gridSizeRK4.y/BIGgridSize.y);
 
+			int globaloffset = yindex*blockSizeRK4.y*BIGgridSize.x*blockSizeRK4.x+xindex*blockSizeRK4.x;
+
+			int hsize = gridSizeRK4.x*blockSizeRK4.x;
+			int vsize = gridSizeRK4.y*blockSizeRK4.y;
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -219,11 +222,21 @@ int main(int argc, char *argv[]) {
 
 			//Copy lengths from device to host
 			//Note: can be even more asynchronous and should copy to different parts of h_lengths.
-			checkCudaErrors(cudaMemcpyAsync(h_lengths, 
+/*			checkCudaErrors(cudaMemcpyAsync(h_lengths, 
 						d_lengths, 
 						(dataCount/steps)*sizeof(float), 
 						cudaMemcpyDeviceToHost,
-						lengths));
+						lengths));*/
+			checkCudaErrors(cudaMemcpy2DAsync(
+						&(h_lengths[globaloffset]),
+						BIGgridSize.x*blockSizeRK4.x*sizeof(float),
+					   	d_lengths,
+						hsize*sizeof(float), 
+						hsize*sizeof(float), 
+						vsize, 
+						cudaMemcpyDeviceToHost,
+						lengths
+						));
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 			
@@ -236,7 +249,6 @@ int main(int argc, char *argv[]) {
 				(d_origins,(float)steps, d_origins);//not size-scalable!!!
 
 			//Copy origin data from device to host
-//			checkCudaErrors(cudaMemcpy(h_origins, d_origins, (dataCount/steps)*sizeof(float4), cudaMemcpyDeviceToHost));
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -252,9 +264,8 @@ int main(int argc, char *argv[]) {
 				(d_radii,d_radii);
 
 			//Copy radii from device to host
-//			checkCudaErrors(cudaMemcpy(h_radii, d_radii, (dataCount/steps)*sizeof(float), cudaMemcpyDeviceToHost));
 
-			//r_radii are still needed, so no memory free just yet.
+			//d_radii are still needed, so no memory free just yet.
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -281,17 +292,7 @@ int main(int argc, char *argv[]) {
 			divide<<<dataCount/(steps*blockSize),blockSize,0,windings2>>>
 				(d_beta, d_alpha, d_alpha);//Not Scalable!!!
 
-			//Insert out-of-bound-check here to remove erronous winding numbers
-
-			//Copying the windingdata line-by-line back to the host
-			int globaloffset = yindex*blockSizeRK4.y*BIGgridSize.x*blockSizeRK4.x+xindex*blockSizeRK4.x;
-
-			int hsize = gridSizeRK4.x*blockSizeRK4.x;
-			int vsize = gridSizeRK4.y*blockSizeRK4.y;
 		
-/*			for(int ylocal = 0; ylocal < vsize; ylocal++) {
-				checkCudaErrors(cudaMemcpy(&(h_windingdata[globaloffset+ylocal*BIGgridSize.x*blockSizeRK4.x]), &(d_alpha[ylocal*hsize]), hsize*sizeof(float), cudaMemcpyDeviceToHost));
-			}*/
 			checkCudaErrors(cudaMemcpy2DAsync(
 						&(h_windingdata[globaloffset]),
 						BIGgridSize.x*blockSizeRK4.x*sizeof(float),
@@ -309,9 +310,8 @@ int main(int argc, char *argv[]) {
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 		   
 			//Free host pointers
-			free(h_origins);
+//			free(h_origins);
 			free(h_lines);
-			cudaFreeHost(h_lengths);
 
 			//Free the remaining device pointers
 			cudaFree(d_alpha);
@@ -328,9 +328,12 @@ int main(int argc, char *argv[]) {
 //	float4write("../datadir/linedata.bin", BIGdataCount, h_lines);
 	name = name.substr(name.rfind("/")+1,name.rfind(".")-name.rfind("/")-1);
 	const std::string prefix = "../datadir/";
-	const std::string suffix = "_windings.bin";
-	const std::string path = prefix+name+suffix;
+	std::string suffix = "_windings.bin";
+	std::string path = prefix+name+suffix;
 	floatwrite(path.c_str(), BIGnroflines, h_windingdata);
+	suffix = "_lengths.bin";
+	path = prefix+name+suffix;
+	floatwrite(path.c_str(), BIGnroflines, h_lengths);
 
 	status = cudaStreamDestroy(RK4);
 	status = cudaStreamDestroy(windings);
@@ -343,7 +346,7 @@ int main(int argc, char *argv[]) {
 
 	cudaFreeHost(h_windingdata);
 	cudaFreeArray(dataArray);
-
+	cudaFreeHost(h_lengths);
 	return 0;
 }
 
