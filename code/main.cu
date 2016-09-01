@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		name = argv[1];
 	}
-	if (name.rfind(".vtk") == -1) {
+	if (name.rfind(".vtk") == std::string::npos) {
 		name.append(".vtk");
 	}
 	//Allocate data array on host
