@@ -263,12 +263,11 @@ int main(int argc, char *argv[]) {
 			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float),windings>>>
 				(d_radii,d_radii);
 
-			//Copy radii from device to host
 
-			//d_radii are still needed, so no memory free just yet.
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-
+			//Make sure data from previous iteration is copied away to host
+			cudaStreamSynchronize(windings2);
 			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
