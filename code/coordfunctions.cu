@@ -18,11 +18,13 @@ __device__ float4 ShiftCoord(float4 locSmiet, float4 offset) {
 	return locSmiet - offset;
 }
 
-//Checked
-__device__ float4 RotateCoord(float4 locSmiet, float4 znew, float4 ynew) {
+//UnChecked
+__device__ float4 RotateCoord(float4 locSmiet, float4 znew) {
 	znew = normalize(znew);
-	ynew = normalize(ynew);
-	float4 xnew = make_float4(cross(make_float3(ynew), make_float3(znew)), 0); //rechtshandig
+	float4 xnew = -1*znew.x*znew;
+	xnew.x += 1;
+	xnew = normalize(xnew);
+	float4 ynew = make_float4(cross(make_float3(znew), make_float3(xnew)), 0); //rechtshandig
 	return make_float4(dot(xnew,locSmiet),dot(ynew,locSmiet),dot(znew,locSmiet), 0);
 }
 
