@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
 	unsigned int steps = 32*blockSize;
-	float dt = 1/8.0;
+	float dt = 1/2.0;
 
 	dim3 BIGgridSize(64,64);
 	dim3 gridSizeRK4(4,4);
@@ -136,9 +136,10 @@ int main(int argc, char *argv[]) {
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	float4 BIGstartloc = make_float4(-1.0,0,-1.5,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 BIGxvec = {3.0,0,0,0};
-	float4 BIGyvec = {0,0,3.0,0};
+//	float4 BIGstartloc = make_float4(0.75,0,-0.45,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 BIGstartloc = make_float4(-1.5,0,-1.5,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 BIGxvec = {3,0,0,0};
+	float4 BIGyvec = {0,0,3,0};
 
 	//Allocate host arrays for the winding numbers,
 	float* h_windingdata;
@@ -151,7 +152,8 @@ int main(int argc, char *argv[]) {
 	h_lines = (float4*) malloc(dataCount*sizeof(float4));
 
 	//Allocate space to store origin data
-	float4 *d_origins, *h_origins;
+	float4 *d_origins;
+//	       *h_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
 //	h_origins = (float4*) malloc(BIGnroflines * sizeof(float4));
 
@@ -161,9 +163,14 @@ int main(int argc, char *argv[]) {
 	status = cudaMallocHost((void**)&h_lengths, BIGnroflines*sizeof(float));
 	if (status != cudaSuccess)
 		printf("Error allocating pinned host memory.\n");
+	//Allocating Origins
+
+	float *d_normals;
+	checkCudaErrors(cudaMalloc(&d_normals, dataCount*sizeof(float4)));
 
 	//Allocating the array to store the radius data, both for host and device
-	float *d_radii, *h_radii;
+	float *d_radii;
+//	      *h_radii;
 	checkCudaErrors(cudaMalloc(&d_radii, dataCount*sizeof(float)));
 //	h_radii = (float*) malloc(BIGnroflines*sizeof(float));
 
@@ -240,6 +247,8 @@ int main(int argc, char *argv[]) {
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 			
+			//Make sure data from previous iteration is copied away to host
+			cudaStreamSynchronize(windings2);
 			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
 			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4),windings>>>
 				(d_lines, d_origins);
@@ -248,9 +257,23 @@ int main(int argc, char *argv[]) {
 			divide<<<dataCount/(steps*blockSize),blockSize,0,windings>>>
 				(d_origins,(float)steps, d_origins);//not size-scalable!!!
 
-			//Copy origin data from device to host
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+
+
+		//Calculate the normals.
+			normal<<<dataCount/blockSize,blockSize,0,windings>>>
+				(d_lines, d_normals, d_origins, steps);
+			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4),windings>>>
+				(d_normals, d_normals);
+			reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4),windings>>>
+				(d_normals, d_normals);
+			divide<<<dataCount/(steps*blockSize),blockSize,0,windings>>>
+				(d_normals,(float)steps, d_normals);//not size-scalable!!!
+
+
+		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+
 
 
 			//Compute the distance from the origin in the xy plane of each point
@@ -266,8 +289,6 @@ int main(int argc, char *argv[]) {
 
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-			//Make sure data from previous iteration is copied away to host
-			cudaStreamSynchronize(windings2);
 			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings

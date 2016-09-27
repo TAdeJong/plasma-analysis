@@ -8,7 +8,7 @@ __device__ int signdiff(float a, float b);
 
 __global__ void reducePC(float4* g_linedata, float4* g_PCdata);
 
-__device__ float4 calcnormal(float4* lineoutput, int steps, dim3 gridsize, int numberoflines, float4* communication, float4 origin);
+__global__ void normal(float4* g_linedata, float4* g_normaldata, float4* g_origin, unsigned int steps);
 
 //Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets
 template <typename T> 

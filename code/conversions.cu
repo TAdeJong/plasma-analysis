@@ -45,6 +45,15 @@ __global__ void reducePC(float4* g_linedata, int* g_PCdata) {
 	if(tid == 0) g_PCdata[blockIdx.x] = idata[0];
 }
 
+__global__ void normal(float4* g_linedata, float4* g_normaldata, float4* g_origin, unsigned int steps) {
+	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+	float4 locCord = g_linedata[i];
+	float4 shiftedCord = shiftCoord(g_linedata[i], g_origin[i/steps]);
+	g_normaldata[i] = make_float4(cross(
+				make_float3(shiftedCord),
+			       	make_float3(tex3D(dataTex, Smiet2Tex(locCord)))
+				));
+}
 /*	Warning: absolutely useless!
 	Mathematics is not correct, does not give normal to plane of torus!!
 		DO NOT USE
