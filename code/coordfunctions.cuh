@@ -11,6 +11,6 @@ __device__ float4 RotateCoord(float4 locSmiet, float4 znew);
 
 __device__ float4 Cart2Sphere(float4 locSmiet);
 
-__device__ float4 Cart2Tor(float4 locSmiet, float r);
+__device__ float4 Cart2Tor(float4 locSmiet, float4 znew, float r);
 
 #endif

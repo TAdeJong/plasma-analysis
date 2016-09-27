@@ -41,7 +41,8 @@ __global__ void reduceSum(T* g_linedata, T* g_sumdata) {
 	if(tid == 0) g_sumdata[blockIdx.x] = sdata[0];
 }
 
-__global__ void winding(float4* g_linedata ,float* g_alpha,float* g_beta, float4* origin, float* r_t, unsigned int steps);
+__global__ void winding(float4* g_linedata ,float* g_alpha,float* g_beta, float4* origin, float* r_t, 
+float4* d_normals, unsigned int steps);
 
 __global__ void divide(float* enumerator, float* denominator, float* output);
 __global__ void divide(float4* enumerator, float denominator, float4* output);

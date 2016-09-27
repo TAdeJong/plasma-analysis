@@ -129,17 +129,18 @@ int main(int argc, char *argv[]) {
 	unsigned int steps = 32*blockSize;
 	float dt = 1/2.0;
 
-	dim3 BIGgridSize(64,64);
+	dim3 BIGgridSize(32,32);
 	dim3 gridSizeRK4(4,4);
 	dim3 blockSizeRK4(16,16); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM VRAM
 
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-//	float4 BIGstartloc = make_float4(0.75,0,-0.45,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 BIGstartloc = make_float4(-1.5,0,-1.5,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 BIGxvec = {3,0,0,0};
-	float4 BIGyvec = {0,0,3,0};
+//	float4 BIGstartloc = make_float4(0.75,0,-0.45,0); //Location (in Smietcoords) to start the 
+//	integration, to be varied
+	float4 BIGstartloc = make_float4(0,0,-1.25,0); //Location (in Smietcoords) to start the integration, to be varied
+	float4 BIGxvec = {1.75,0,0,0};
+	float4 BIGyvec = {0,0,1.75,0};
 
 	//Allocate host arrays for the winding numbers,
 	float* h_windingdata;
@@ -165,7 +166,7 @@ int main(int argc, char *argv[]) {
 		printf("Error allocating pinned host memory.\n");
 	//Allocating Origins
 
-	float *d_normals;
+	float4 *d_normals;
 	checkCudaErrors(cudaMalloc(&d_normals, dataCount*sizeof(float4)));
 
 	//Allocating the array to store the radius data, both for host and device
@@ -205,6 +206,7 @@ int main(int argc, char *argv[]) {
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
+			cudaDeviceSynchronize();	
 			cudaStreamSynchronize(windings);
 			cudaStreamSynchronize(lengths);
 			//Integrate the vector field
@@ -215,6 +217,7 @@ int main(int argc, char *argv[]) {
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
+			//cudaDeviceSynchronize();	
 			cudaStreamSynchronize(RK4);//Wait for d_lines to be filled
 	
 			//Compute the length of each line (locally)
@@ -247,6 +250,7 @@ int main(int argc, char *argv[]) {
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 			
+			cudaStreamSynchronize(lengths);
 			//Make sure data from previous iteration is copied away to host
 			cudaStreamSynchronize(windings2);
 			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
@@ -272,13 +276,14 @@ int main(int argc, char *argv[]) {
 				(d_normals,(float)steps, d_normals);//not size-scalable!!!
 
 
+//			cudaDeviceSynchronize();	
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
 
 
 			//Compute the distance from the origin in the xy plane of each point
 			rxy<<<dataCount/blockSize,blockSize,0,windings>>>
-				(d_lines, d_radii, (float)steps, d_origins, steps);
+				(d_lines, d_radii, (float)steps, d_origins, d_normals, steps);
 
 			//Average these distances to find the torus radius
 			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float),windings>>>
@@ -288,8 +293,10 @@ int main(int argc, char *argv[]) {
 
 
 
+//			cudaDeviceSynchronize();	
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, d_origins, d_radii, steps);
+			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, 
+d_origins, d_radii, d_normals, steps);
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			//This code is dependent on completion of winding, but independent on d_lines
@@ -312,7 +319,7 @@ int main(int argc, char *argv[]) {
 			divide<<<dataCount/(steps*blockSize),blockSize,0,windings2>>>
 				(d_beta, d_alpha, d_alpha);//Not Scalable!!!
 
-		
+//			cudaDeviceSynchronize();	
 			checkCudaErrors(cudaMemcpy2DAsync(
 						&(h_windingdata[globaloffset]),
 						BIGgridSize.x*blockSizeRK4.x*sizeof(float),

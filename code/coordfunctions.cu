@@ -34,7 +34,8 @@ __device__ float4 Cart2Sphere(float4 locSmiet) {
 }
 
 //Checked
-__device__ float4 Cart2Tor(float4 locSmiet, float R) {
+__device__ float4 Cart2Tor(float4 locSmiet, float4 znew, float R) {
+	locSmiet = RotateCoord(locSmiet, znew);
 	float alpha = atan(locSmiet.y/locSmiet.x);
 	float rho = length(make_float2(locSmiet.x,locSmiet.y));//projection onto xy-plane
 	float beta = atan(locSmiet.z/(rho-R)); 
