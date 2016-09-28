@@ -14,6 +14,17 @@ __device__ float4 RK4step(float4 loc, double dt) {
 	return dt/6.0*(k1 + 2.0*(k2 + k3) + k4);
 }
 
+__global__ void RK4init(float* g_Blength, float4 startloc, float4 xvec, float4 yvec) {
+	dim3 index2D(threadIdx.x + blockIdx.x * blockDim.x, threadIdx.y + blockIdx.y*blockDim.y);
+	float4 dx = (1.0/(gridDim.x*blockDim.x))*xvec;
+	float4 dy = (1.0/(gridDim.y*blockDim.y))*yvec;
+	float4 loc = startloc + index2D.x*dx + index2D.y*dy;
+	int index = index2D.y*(gridDim.x*blockDim.x) + index2D.x;
+	float3 loc3dTex = Smiet2Tex(loc);
+	float4 Bloc = tex3D(dataTex, loc3dTex);
+	g_Blength[index] = length(make_float3(Bloc));
+	return;
+}
 
 /*	Integrates (RK4) the vectorfield dataTex with timestep dt over
 	steps number of timesteps, and saves the resulting curve in lineoutput. The w-coordinate

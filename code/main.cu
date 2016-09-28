@@ -127,20 +127,19 @@ int main(int argc, char *argv[]) {
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
 	unsigned int steps = 32*blockSize;
-	float dt = 1/2.0;
+	float dt = 0;
 
-	dim3 BIGgridSize(32,32);
+	dim3 BIGgridSize(64,64);
 	dim3 gridSizeRK4(4,4);
 	dim3 blockSizeRK4(16,16); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM VRAM
 
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-//	float4 BIGstartloc = make_float4(0.75,0,-0.45,0); //Location (in Smietcoords) to start the 
+	float4 BIGstartloc = make_float4(0.,0,-1.5,0); //Location (in Smietcoords) to start the 
 //	integration, to be varied
-	float4 BIGstartloc = make_float4(0,0,-1.25,0); //Location (in Smietcoords) to start the integration, to be varied
-	float4 BIGxvec = {1.75,0,0,0};
-	float4 BIGyvec = {0,0,1.75,0};
+	float4 BIGxvec = {2.5,0,0,0};
+	float4 BIGyvec = {0,0,2.5,0};
 
 	//Allocate host arrays for the winding numbers,
 	float* h_windingdata;
@@ -180,6 +179,16 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
 	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
+
+	RK4init<<<gridSizeRK4,blockSizeRK4,0>>>(d_lengths, BIGstartloc, BIGxvec, BIGyvec);
+	reduceSum<float><<<gridSizeRK4.x*gridSizeRK4.y/2,blockSizeRK4.x*blockSizeRK4.y,blockSizeRK4.x*blockSizeRK4.y*sizeof(float)>>>
+		(d_lengths, d_lengths);
+	reduceSum<float><<<1,gridSizeRK4.x*gridSizeRK4.y/4,gridSizeRK4.x*gridSizeRK4.y/4*sizeof(float)>>>
+		(d_lengths, d_lengths);
+	checkCudaErrors(cudaMemcpy(&dt, d_lengths,sizeof(float),cudaMemcpyDeviceToHost));
+	dt/=(float)(dataCount/steps);
+	std::cout << "B_length mean = " << dt << std::endl;
+	dt = (1.0/32.0)/dt;
 
 
 	//Set up streams for independent execution
