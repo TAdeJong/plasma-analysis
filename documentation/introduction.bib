@@ -13,3 +13,30 @@
   url = {http://link.aps.org/doi/10.1103/PhysRevLett.115.095001}
 }
 
+@article{McNally01052011,
+author = {McNally, Colin P.}, 
+title = {Divergence-free interpolation of vector fields from point values — exact ∇ ⋅B = 0 in numerical simulations},
+volume = {413}, 
+number = {1}, 
+pages = {L76-L80}, 
+year = {2011}, 
+doi = {10.1111/j.1745-3933.2011.01037.x}, 
+abstract ={In astrophysical magnetohydrodynamics (MHD) and electrodynamics simulations, numerically enforcing the ∇·B= 0 constraint on the magnetic field has been difficult. We observe that for point-based discretization, as used in finite-difference type and pseudo-spectral methods, the ∇·B= 0 constraint can be satisfied entirely by a choice of interpolation used to define the derivatives of B. As an example we demonstrate a new class of finite-difference-type derivative operators on a regular grid which has the ∇·B= 0 property. This principle clarifies the nature of ∇·B≠ 0 errors. The principles and techniques demonstrated in this Letter are particularly useful for the magnetic field, but can be applied to any vector field. This Letter serves as a brief introduction to the method and demonstrates an implementation showing convergence.}, 
+URL = {http://mnrasl.oxfordjournals.org/content/413/1/L76.abstract}, 
+eprint = {http://mnrasl.oxfordjournals.org/content/413/1/L76.full.pdf+html}, 
+journal = {Monthly Notices of the Royal Astronomical Society: Letters} 
+}
+@article{Ruijters01012012,
+author = {Ruijters, Daniel and Thévenaz, Philippe}, 
+title = {GPU Prefilter for Accurate Cubic B-spline Interpolation},
+volume = {55}, 
+number = {1}, 
+pages = {15-20}, 
+year = {2012}, 
+doi = {10.1093/comjnl/bxq086}, 
+abstract ={Achieving accurate interpolation is an important requirement for many signal-processing applications. While nearest-neighbor and linear interpolation methods are popular due to their native GPU support, they unfortunately result in severe undesirable artifacts. Better interpolation methods are known but lack a native GPU support. Yet, a particularly attractive one is prefiltered cubic-spline interpolation. The signal it reconstructs from discrete samples has a much higher fidelity to the original data than what is achievable with nearest-neighbor and linear interpolation. At the same time, its computational load is moderate, provided a sequence of two operations is applied: first, prefilter the samples, and only then reconstruct the signal with the help of a B-spline basis. It has already been established in the literature that the reconstruction step can be implemented efficiently on a GPU. This article focuses on an efficient GPU implementation of the prefilter, on how to apply it to multidimensional samples (e.g. RGB color images), and on its performance aspects.}, 
+URL = {http://comjnl.oxfordjournals.org/content/55/1/15.abstract}, 
+eprint = {http://comjnl.oxfordjournals.org/content/55/1/15.full.pdf+html}, 
+journal = {The Computer Journal} 
+}
+

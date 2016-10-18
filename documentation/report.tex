@@ -41,12 +41,28 @@ Thus we want to interpolate the vector field, in order to get a good approximati
 Interpolation of two- and even three dimenional data is used in graphics processing in order to map images onto three-dimensional objects and is known as texturing. This means that GPU's have efficient texturing units, hardware accelerating trilinear interpolation. 
 
 Using CUDA enables us to use this hardware accelerated interpolation by storing our vector field data as a texture. Since every RK4-step needs at least 6 data points, this is a large benefit. %alhoewel we dit natuurlijk niet gemeten hebben.
+\subsection{Algorithm}
+To calculate the windingnumber of a field line passing through a certain starting point, we first use RK4 to integrate a large length of field line. This process is inherently sequential and since the interpolation is hardware optimized, we are memory access bound in this part of the algorithm. This was verified by using the NVIDIA profiler. Thus there was no use in parallizing the integration further than one-thread-per-field-line.
+
+Since the torus moves through space, we first need to find its position and orientation before we can calculate any other relevant parameters.
+By taking the average coordinate over the whole field line, we find the origin of our torus. This summation can be done efficiently in parallel as a reduction.
+
+Next we need to calculate the orientation of the torus. This again is an average of a local calculation on the field line and is implemented as a similar parallel reduction.
+
+The last part of the torus coordinate system needed is the radius of the torus. For this we calculate the average distance from the origin in the projection onto the $xy$-plane. %This is error prone, see discussion.
+
+With this coordinate system, calculating the winding numbers of the field lines is as simple as calculating the difference in both polloidal and toroidal coordinates between consecutive data points and summing these. This is once again implemented as a parallel reduction. In the implementation it was needed to take care of unwrapping the coordinates modulo $2\pi$ using some inefficient if-statements. %Discussion: One could probably devise a parallel unwrap algorithm, but would it be worth it?
+Taking the ratio of the total pollodoidal and toroidal change, we have found the winding number.
+
+Taking a 2D-grid of winding numbers and doing above calculations in parallel, we can show the winding number as a function of position in the torus.
 \section{Results}
 {\bf plaatjes, timings + scaling, portability, meer plaatjes: lines, lengths, windings, masking}
 \section{Discussion}
 {\bf Algoritmekeuzes \textrightarrow betere keuzes, sign flip in center, stitching issues, aannames over geometrie}
 \section{Suggestions for future work}
 {\bf betere algoritmes: vanwege memory bound meer rekenen tijdens RK4, normaal implementeren, betere modulariteit, dynamische stapgrootte. Variantie/FFT op windingsgetallen in tijdsdomein}
+Better algorithms exist for interpolation, most notably cubic interpolation and interpolation schemes which preserve the zero divergence of the magnetic field\cite{McNally01052011}. It is possible that these algorithms could further reduce numerical artefacts. %TODO Which artefacts.
+Notably, efficient, open source, implementations in CUDA of cubic interpolation exist.\cite{Ruijters01012012}
 \bibliographystyle{plain}
 \bibliography{introduction}
 \end{document}
