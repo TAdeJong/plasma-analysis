@@ -25,7 +25,9 @@ Of this tori we want to calculate properties, foremost the winding number.
 
 To implement the code we were inspired by Marek Fiser.\footnote{\url{http://www.marekfiser.com/Projects/Real-time-visualization-of-3D-vector-field-with-CUDA}} He uses Runge-Kutta integration to visualize (air) flows around a Delta wing, but the idea of integration of a vector field is the same.
 \section{Theory}
-{\bf plasma-fluidity, field lines }
+{\bf plasma-fluidity, field lines } We want to calculate properties of field lines. In order to do this we need to calculate (finite segments of) field lines. In  order to do this, it is enough to note that field lines are the solutions $\vec x(t)$ to the following ordinary differential equation:
+\[\Dif{\vec x}{t} = B(\vec x)\]
+To calculate a field line, we will use numerical integration as described in the next section.
 \section{Numerical theory}
 {\bf RK4, datastructuren (+textures), algoritme ontwerp + complexiteit in termen van relevante parameters, optimalisaties?}
 \subsection{Vector field representation}
@@ -41,8 +43,11 @@ Thus we want to interpolate the vector field, in order to get a good approximati
 Interpolation of two- and even three dimenional data is used in graphics processing in order to map images onto three-dimensional objects and is known as texturing. This means that GPU's have efficient texturing units, hardware accelerating trilinear interpolation. 
 
 Using CUDA enables us to use this hardware accelerated interpolation by storing our vector field data as a texture. Since every RK4-step needs at least 6 data points, this is a large benefit. %alhoewel we dit natuurlijk niet gemeten hebben.
+\subsection{Runge-Kutta method}
+For line integration the fourth order Runge-Kutta method (RK4) was used. Although it uses no special properties of the field, such as the divergencelessness or the Hamiltonian description, it is known as a good allround integration method and hassle free to implement. 
+Compared to standard Forward Euler, RK4 uses four values of the magnetic field to calculate the next point on the field line. This increase in calculation per step is compensated by a vastly reduced error per step, allowing for a much larger step size $h$, since RK4 is a fourth order method with total accumulated error $\O{h^4}$.
 \subsection{Algorithm}
-To calculate the windingnumber of a field line passing through a certain starting point, we first use RK4 to integrate a large length of field line. This process is inherently sequential and since the interpolation is hardware optimized, we are memory access bound in this part of the algorithm. This was verified by using the NVIDIA profiler. Thus there was no use in parallizing the integration further than one-thread-per-field-line.
+To calculate the winding number of a field line passing through a certain starting point, we first use RK4 to integrate a large length of field line. This process is inherently sequential and since the interpolation is hardware optimized, we are memory access bound in this part of the algorithm. This was verified by using the NVIDIA profiler. Thus there was no use in parallizing the integration further than one-thread-per-field-line.
 
 Since the torus moves through space, we first need to find its position and orientation before we can calculate any other relevant parameters.
 By taking the average coordinate over the whole field line, we find the origin of our torus. This summation can be done efficiently in parallel as a reduction. For implementation we implemented most of the methods described by Harris et al.~\cite{harris2007optimizing}
@@ -58,11 +63,16 @@ Taking a 2D-grid of winding numbers and doing above calculations in parallel, we
 \section{Results}
 {\bf plaatjes, timings + scaling, portability, meer plaatjes: lines, lengths, windings, masking}
 \section{Discussion}
-{\bf Algoritmekeuzes \textrightarrow betere keuzes, sign flip in center, stitching issues, aannames over geometrie}
+{\bf Algoritmekeuzes \textrightarrow betere keuzes, sign flip in center: niet meer nodig?, stitching issues: niet meer nodig?, aannames over geometrie}
+Because the numerical integration is the only inherently sequential part of the algorithm, we made the choice to minimize calculations during this part of the algorithm. Profiling of the code shows however that it is heavily memory bandwidth bound. This suggest more calculations can be done during integration to improve use of the other computational resources during this part of the algorithm.
 \section{Suggestions for future work}
 {\bf betere algoritmes: vanwege memory bound meer rekenen tijdens RK4, normaal implementeren, betere modulariteit, dynamische stapgrootte. Variantie/FFT op windingsgetallen in tijdsdomein}
+\subsection{Interpolation}
 Better algorithms exist for interpolation, most notably cubic interpolation and interpolation schemes which preserve the zero divergence of the magnetic field\cite{McNally01052011}. It is possible that these algorithms could further reduce numerical artefacts. %TODO Which artefacts.
 Notably, efficient, open source, implementations in CUDA of cubic interpolation exist.\cite{Ruijters01012012}
+\subsection{Integration}
+As mentions the code was shown to be largely memory access bound. Implementation of a multi-step method such as Adams-Bashforth could reduce the number of texture fetches per step, while maintaining a high order.
+It might also be possible to exploit the knowledge that the system is Hamiltonian to implement a symplectic method.
 \bibliographystyle{plain}
 \bibliography{introduction}
 \end{document}
