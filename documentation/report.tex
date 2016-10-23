@@ -45,7 +45,7 @@ Using CUDA enables us to use this hardware accelerated interpolation by storing 
 To calculate the windingnumber of a field line passing through a certain starting point, we first use RK4 to integrate a large length of field line. This process is inherently sequential and since the interpolation is hardware optimized, we are memory access bound in this part of the algorithm. This was verified by using the NVIDIA profiler. Thus there was no use in parallizing the integration further than one-thread-per-field-line.
 
 Since the torus moves through space, we first need to find its position and orientation before we can calculate any other relevant parameters.
-By taking the average coordinate over the whole field line, we find the origin of our torus. This summation can be done efficiently in parallel as a reduction.
+By taking the average coordinate over the whole field line, we find the origin of our torus. This summation can be done efficiently in parallel as a reduction. For implementation we implemented most of the methods described by Harris et al.~\cite{harris2007optimizing}
 
 Next we need to calculate the orientation of the torus. This again is an average of a local calculation on the field line and is implemented as a similar parallel reduction.
 
