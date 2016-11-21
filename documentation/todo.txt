@@ -1,0 +1,18 @@
+Introductie:
+	-CUDA, parallel
+	-Fysische interesse (topologische invarianten + stabiliteit)
+	-Waarom numeriek + parallel
+	-We hebben B-veld geanalyseerd
+	-Marek Fiser
+	-Resultaten
+
+Tikz plaatje coordinatensystemen
+
+Results:
+	-2x Windingdata
+	-1x lengtedata
+	-Snelheid
+		1) #pixels
+		2) #steps/line
+	-Memory scaling/requirements
+	-2x fringe patterns (bij verschillende stepsizes)
