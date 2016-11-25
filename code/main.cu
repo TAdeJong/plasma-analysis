@@ -129,17 +129,17 @@ int main(int argc, char *argv[]) {
 	unsigned int steps = 32*blockSize;
 	float dt = 0;
 
-	dim3 BIGgridSize(64,64);
-	dim3 gridSizeRK4(4,4);
-	dim3 blockSizeRK4(16,16); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GM VRAM
+	dim3 BIGgridSize(32,32);
+	dim3 gridSizeRK4(2,2);
+	dim3 blockSizeRK4(32,32); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GB VRAM
 
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	float4 BIGstartloc = make_float4(0.,0,-1.5,0); //Location (in Smietcoords) to start the 
+	float4 BIGstartloc = make_float4(0,0,-1.7,0); //Location (in Smietcoords) to start the 
 //	integration, to be varied
 	float4 BIGxvec = {2.5,0,0,0};
-	float4 BIGyvec = {0,0,2.5,0};
+	float4 BIGyvec = {0,0,3,0};
 
 	//Allocate host arrays for the winding numbers,
 	float* h_windingdata;
