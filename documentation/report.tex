@@ -78,10 +78,50 @@ With this coordinate system calculating the winding numbers of the field lines i
 In the implementation it was needed to take care of unwrapping the coordinates modulo $2\pi$ using some inefficient if-statements. %Discussion: One could probably devise a parallel unwrap algorithm, but would it be worth it?
 After summing these values we compte the ratio of the total polodoidal and toroidal change, and have found the winding number.
 
-As mentioned before this entire algorithm is parallelized by considering multiple field lines at the same time. In particular we pick a 2D-grid of initial locations for the field lines instead of a single point. Using this data we can show the winding number as a function of position in the nested tori.
+As mentioned before this entire algorithm is parallelized by considering multiple field lines at the same time. In particular we pick a 2D-grid of initial locations for the field lines instead of a single point. Using this data we can show the winding number as a function of position in the nested tori.\\
+
+All analysis of the field lines in our code is done through assigning one thread to each point on the field line, computing a local variable of interest and then integrating/averaging this along a field line. Therefore the execution time of this part of the code is linear in the number of points on our field lines, and therefore linear in the product of the number of field lines we are considering times the number of steps per field line. Since the generating of the field lines is also linear in this product we expect the execution time of our code to be (independently) linear in the number of lines and the number of steps per line. We should remark that there is some fixed runtime which is required to allocate memory, load the magnetic field and initialise the hardware accellerated structures, so even though we expect the runtime to be linear in the number of points we do not expect this line to go through the origin.
 
 \section{Results}
 {\bf plaatjes, timings + scaling, portability, meer plaatjes: lines, lengths, windings, masking}
+\subsection{Simulated field lines}
+Using our code we computed magnetic field lines for given magnetic fields. Included are three examples of the winding numbers computed with this code, and one example of the computed line lengths.
+
+
+\begin{figure}[!htb]
+\minipage{0.32\textwidth}
+  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_82_steps32k.png}
+  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is "Papertwist1-82". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:82-32k}
+\endminipage\hfill
+\minipage{0.32\textwidth}
+  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps8k.png}
+  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $8196$ points per field line.}\label{fig:125-8k}
+\endminipage\hfill
+\minipage{0.32\textwidth}%
+  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps32k.png}
+  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-32k}
+\endminipage
+\end{figure}
+
+In order to make a good image we had to restrict the data in two ways. We firstly changed the colour scale (as mentioned in the caption above) to ensure that the changes in the nearly-constant winding number are visible. Secondly we have discarded (masked) all the points with low total length of the field line, reasoning that the winding numbers of short field lines can be wildly inaccurate. For completeness we include a plot of the length of the field lines and the unmasked (but still colour-clipped) data in figure \ref{fig:125-32k} below.
+
+\begin{figure}[!htb]
+\minipage{0.45\textwidth}
+  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_lengths_steps32k.png}
+  \caption{Lengths of the field lines of a cross-section through the torus. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-lengths}
+\endminipage\hfill
+\minipage{0.45\textwidth}
+  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_nomask_steps32k.png}
+  \caption{Unmasked winding numbers of the field lines of a cross-section through the torus. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-unmasked}
+\endminipage
+\end{figure}
+
+
+
+\subsection{Speed and scaling}
+We have recorded the runtime of the code for the dataset "Shafranov Rot3 ampl 0,05 Animation50", generating and analysing datasets as in figures \ref{fig:82-32k}-\ref{fig:125-32k}. For the first set of timing data we fixed the image size at $1024\times 1024$ pixels (field lines) and varied the number of steps per field line. After that we fixed the number of steps per field line (at $32786$) and varied the number of pixels (field lines) in an image.
+
+
 
 \section{Discussion}
 {\bf Algoritmekeuzes \textrightarrow betere keuzes, sign flip in center: niet meer nodig?, stitching issues: niet meer nodig?, aannames over geometrie, dynamische stapgrootte, fringes door fouten $(\alpha,\beta)$-afronding.}\\
