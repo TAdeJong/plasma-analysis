@@ -4,7 +4,7 @@
 \usepackage{cite}
 \usepackage[hidelinks]{hyperref}
 \usepackage[section]{placeins}
-
+\usepackage[font=footnotesize,labelfont=bf]{caption}
 \newcommand{\Part}[3][ ]{\ensuremath{\frac{\partial^{#1} #2}{{\partial #3}^{#1}}}}
 \newcommand{\Dif}[3][ ]{\ensuremath{\frac{d^{#1} #2}{{d #3}^{#1}}}}
 \renewcommand{\O}[1]{\ensuremath{\mathcal{O}\left(#1\right)}}
@@ -92,15 +92,15 @@ Using our code we computed magnetic field lines for given magnetic fields. Inclu
 \begin{figure}[!htb]
 \minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_82_steps32k.png}
-  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is "Papertwist1-82". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:82-32k}
+  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is ``Papertwist1-82". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:82-32k}
 \endminipage\hfill
 \minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps8k.png}
-  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $8196$ points per field line.}\label{fig:125-8k}
+  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $8196$ points per field line.}\label{fig:125-8k}
 \endminipage\hfill
 \minipage{0.32\textwidth}%
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps32k.png}
-  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-32k}
+  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-32k}
 \endminipage
 \end{figure}
 
@@ -109,7 +109,7 @@ In order to make a good image we had to restrict the data in two ways. We firstl
 \begin{figure}[!htb]
 \minipage{0.48\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_lengths_steps32k.png}
-  \caption{Lengths of the field lines of a cross-section through the torus. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-lengths}
+  \caption{Lengths of the field lines of a cross-section through the torus. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-lengths}
 \endminipage\hfill
 \minipage{0.48\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_nomask_steps32k.png}
