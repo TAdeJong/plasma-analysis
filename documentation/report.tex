@@ -90,30 +90,31 @@ Using our code we computed magnetic field lines for given magnetic fields. Inclu
 
 
 \begin{figure}[!htb]
-\minipage{0.32\textwidth}
+\minipage{0.49\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_82_steps32k.png}
-  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is ``Papertwist1-82". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:82-32k}
 \endminipage\hfill
-\minipage{0.32\textwidth}
-  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps8k.png}
-  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $8196$ points per field line.}\label{fig:125-8k}
-\endminipage\hfill
-\minipage{0.32\textwidth}%
+\minipage{0.49\textwidth}%
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps32k.png}
-  \caption{Winding numbers of the field lines of a cross-section through the torus. The vertical axis was scaled since the winding number is almost constant. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-32k}
+ \label{fig:125-32k}
 \endminipage
+	\caption{Winding numbers of the field lines of a cross-section through the torus for the dataset ``Papertwist1''. The color scale was cut on both sides to optimize for the structure inside the Torus. Both images have a resolution of $1024\times 1024$ pixels and use $32768$ points per field line. The left image is at time $t=82$, the right one at $t=125$.}\label{fig:125-32k}\label{fig:82-32k}
+
 \end{figure}
 
 In order to make a good image we had to restrict the data in two ways. We firstly changed the colour scale (as mentioned in the caption above) to ensure that the changes in the nearly-constant winding number are visible. Secondly we have discarded (masked) all the points with low total length of the field line, reasoning that the winding numbers of short field lines can be wildly inaccurate. For completeness we include a plot of the length of the field lines and the unmasked (but still colour-clipped) data in figure \ref{fig:125-32k} below.
 
 \begin{figure}[!htb]
-\minipage{0.48\textwidth}
+\minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_lengths_steps32k.png}
   \caption{Lengths of the field lines of a cross-section through the torus. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-lengths}
 \endminipage\hfill
-\minipage{0.48\textwidth}
+\minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_nomask_steps32k.png}
   \caption{Unmasked winding numbers of the field lines of a cross-section through the torus. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-unmasked}
+\endminipage\hfill
+\minipage{0.32\textwidth}
+  \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps8k.png}
+	\caption{Identical to Figure \ref{fig:125-32k}, albeit with $8196$ points per field line. Although most of the figures reproduce, numerical `ripples' arise due to the too short integration time.}\label{fig:125-8k}
 \endminipage
 \end{figure}
 
