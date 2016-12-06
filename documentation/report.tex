@@ -46,8 +46,7 @@ Both steps can be parallelized heavily. To parallelize the numerical integration
 Both the fact that we need to calculate many field lines and the fact that all field lines are independent, with little conditional steps in the property calculation, indicate that a GPU will be a powerfull instrument to tackle this problem.
 
 
-\section{Numerical theory}
-{\bf complexiteit in termen van relevante parameters}
+\section{Numerical Aspects}
 \subsection{Vector field representation}
 To represent the vector field $\vec{B}: \mathbb{R}^3 \to \mathbb{R}^3$ in a computer we need to discretize this field. This is done by defining a grid in space and saving the components of the field at each grid point. Note that we are interested in the field lines for fixed moments in time, so all our analysis will not concern the time evolution of the plasma. There are two ways to save all the components: either seperate the components and save a three-dimensional array for each component of the vector field (three $N\times N\times N$ arrays), or save one large array of which each component contains the whole vector at the corresponding gridpoint (one $N\times N\times N$ array of $3D$ vectors).
 
@@ -64,14 +63,16 @@ Using CUDA enables us to use this hardware accelerated interpolation by storing 
 \subsection{Runge-Kutta method}
 For line integration the fourth order Runge-Kutta method (RK4) was used.  This method is known as a good allround integration method. Compared to standard Forward Euler, RK4 uses four values of the magnetic field to calculate the next point on the field line. This increase in calculation time per step is compensated by a vastly reduced error per step, allowing for a much larger step size $\Delta s$, since RK4 is a fourth order method with total accumulated error $\O{\Delta s^4}$.
 
-\subsection{Algorithm}
+\section{Algorithm}
 At a high level our algorithm consists of three steps: 
 \begin{enumerate}
 	\item Calculate the field line
 	\item Determine a coordinate system
 	\item Calculate the required properties in this new coordinate system
 \end{enumerate}
-We will further eleborate on these steps below.\\
+We will further eleborate on these steps below and comment on the complexity.\\
+
+\subsection{Step by step}
 
 To calculate the winding number of a field line passing through a certain starting point we first use RK4 to integrate a large length of field line from the magnetic field data. This process is inherently sequential.
 Since the interpolation is hardware optimized we are memory access bound in this part of the algorithm, which we have verified by using the NVIDIA profiler. Thus there was nothing to be gained from parallelizing the integration further than one-thread-per-field-line.
@@ -90,12 +91,12 @@ In the implementation it was needed to take care of unwrapping the coordinates m
 As a last step, the ratio of the total polodoidal and toroidal changeis computed to find the winding number.
 
 As mentioned before this entire algorithm is parallelized by considering multiple field lines simultaneously. In particular we pick a 2D-grid of initial locations for the field lines instead of a single point. Using this data we can show the winding number as a function of position in the nested tori.\\
-
+\subsection{Complexity}
 All analysis of the field lines in our code is done through assigning one thread to each point on the field line, computing a local variable of interest and then integrating/averaging this along a field line. Therefore the execution time of this part of the code is linear in the number of points on our field lines, and therefore linear in the product of the number of field lines times the number of steps per field line. Since the generating of the field lines is also linear in this product we expect the execution time of our code to be (independently) linear in the number of lines and the number of steps per line. We should remark that there is some fixed runtime which is required to allocate memory, load the magnetic field and initialise the hardware accellerated structures, so even though we expect the runtime to be linear in the number of points we do not expect this line to go through the origin.
  \textbf{WRONG}
 
 \section{Results}
-{\bf plaatjes, timings + scaling, portability, meer plaatjes: lines, lengths, windings, masking}
+%{\bf plaatjes, timings + scaling, portability, meer plaatjes: lines, lengths, windings, masking}
 \subsection{Simulated field lines}
 Using our code we computed magnetic field lines for given magnetic fields. Included are three examples of the winding numbers computed with this code, and one example of the computed line lengths.
 
@@ -104,45 +105,42 @@ Using our code we computed magnetic field lines for given magnetic fields. Inclu
 \minipage{0.49\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_82_steps32k.png}
 \endminipage\hfill
-\minipage{0.49\textwidth}%
+\minipage{0.49\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps32k.png}
- \label{fig:125-32k}
 \endminipage
-	\caption{Winding numbers of the field lines of a cross-section through the torus for the dataset ``Papertwist1''. The color scale was cut on both sides to optimize for the structure inside the Torus. Both images have a resolution of $1024\times 1024$ pixels and use $32768$ points per field line. The left image is at time $t=82$, the right one at $t=125$.}\label{fig:125-32k}\label{fig:82-32k}
-
+	\caption{Winding numbers of the field lines of a cross-section through the torus for the dataset \texttt{Papertwist1}. The color scale was cut on both sides to optimize for the structure inside the Torus. Both images have a resolution of $1024\times 1024$ pixels and use $32768$ points per field line. The left image is at time $t=82$, the right one at $t=125$.}\label{fig:125-32k}\label{fig:82-32k}
 \end{figure}
 
-In order to make a good image we had to restrict the data in two ways. We firstly changed the colour scale (as mentioned in the caption above) to ensure that the changes in the nearly-constant winding number are visible. Secondly we have discarded (masked) all the points with low total length of the field line, reasoning that the winding numbers of short field lines can be wildly inaccurate. For completeness we include a plot of the length of the field lines and the unmasked (but still colour-clipped) data in figure \ref{fig:125-32k} below.
+In order to make a good image we had to restrict the data in two ways. We firstly changed the colour scale to ensure that the changes in the nearly-constant winding number are visible. Secondly we have discarded (masked) all the points with low total length of the field line, reasoning that the winding numbers of short field lines can be wildly inaccurate. For completeness we include a plot of the length of the field lines and the unmasked (but still colour-clipped) data in figure \ref{fig:125-32k} below.\\
 
-\begin{figure}[!htb]
+\begin{figure}[!hb]
 \minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_lengths_steps32k.png}
-  \caption{Lengths of the field lines of a cross-section through the torus. The vector field used is ``Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-lengths}
+	\caption{Lengths of the field lines of a cross-section through the torus. The vector field used is \texttt{Papertwist1-125}. The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-lengths}
 \endminipage\hfill
 \minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_nomask_steps32k.png}
-  \caption{Unmasked winding numbers of the field lines of a cross-section through the torus. The vector field used is "Papertwist1-125". The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-unmasked}
+	\caption{Unmasked winding numbers of the field lines of a cross-section through the torus. The vector field used is \texttt{Papertwist1-125}. The image is $1024\times 1024$ pixels, with $32768$ points per field line.}\label{fig:125-unmasked}
 \endminipage\hfill
 \minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{Figures/Rings_Papertwist_twist1_125_steps8k.png}
-	\caption{Identical to Figure \ref{fig:125-32k}, albeit with $8196$ points per field line. Although most of the figures reproduce, numerical `ripples' arise due to the too short integration time.}\label{fig:125-8k}
+	\caption{Identical to Figure~\ref{fig:125-32k}, albeit with $8196$ points per field line. Although most of the figures reproduce, numerical `ripples' arise due to the too short integration time.}\label{fig:125-8k}
 \endminipage
 \end{figure}
 
-
-
+\FloatBarrier
 \subsection{Speed and scaling}
-We have recorded the runtime of the code for the dataset "Shafranov Rot3 ampl 0,05 Animation50", generating and analysing datasets as in figures \ref{fig:82-32k}-\ref{fig:125-32k}. For the first set of timing data we fixed the image size at $1024\times 1024$ pixels (field lines) and varied the number of steps per field line. After that we fixed the number of steps per field line (at $32768$) and varied the number of pixels (field lines) in an image.\\
+We have recorded the runtime of the code on a NVIDIA GTX1080 for the dataset \texttt{Shafranov Rot3 ampl 0,05 Animation50}, generating and analysing datasets as in figure \ref{fig:82-32k}. For the first set of timing data we fixed the image size at $1024\times 1024$ pixels (field lines) and varied the number of steps per field line. After that we fixed the number of steps per field line (at $32768$) and varied the number of pixels in an image.\\
 \begin{figure}[!ht]
-	\includegraphics[width=\linewidth]{Figures/timings_1.pdf}
-	\caption{Linear fit of the computation time as a function of the number of RK4-steps.}\label{fig:timings1}
+	\includegraphics{Figures/timings_1.pdf}
+	\caption{Linear fit of the computation time as a function of the number of RK4-steps. This was done for a resolution of $1024 \times 1024$}\label{fig:timings1}
 \end{figure}
 \begin{figure}[!ht]
-	\includegraphics[width=\linewidth]{Figures/timings_2.pdf}
-	\caption{Moar Timingzzzz......}\label{fig:timings2}
+	\includegraphics{Figures/timings_2.pdf}
+	\caption{Linear fit of the computation time as a function of number of field lines for 32768 RK4-steps each.}\label{fig:timings2}
 \end{figure}
 
-We compared the performance of our program with an older simulation which also computed winding numbers for plasma field lines that was in use before our code was available. The older code simulated a $1\times 1100$ array of field lines with $4000-16000$ steps per line, and took approximately $36$ hours for this simulation. Comparing this with our own results we conclude that our program is faster by approximately a factor of $3.5\cdot 10^6$.\\
+We compared the performance of our program with an older simulation which also computed winding numbers for plasma field lines that was in use before our code was available. The older code simulated a $1\times 1100$ array of field lines with 4000--16000 steps per line, and took approximately $36$ hours for this simulation. Comparing this with our own results we conclude that our program is faster by a factor of approximately $3.5\cdot 10^6$.\\
 
 Lastly we used the NVIDIA visual profiler to see how much memory our code was using while active. While generating a $1024\times 1024$ dataset with $32768$ steps per field line the program was using $6513$ MiB while in use, whereas running the code with identical parameters except for halving the number of steps per line (to $16384$) the program was using $3441$ MiB.
 
@@ -154,7 +152,7 @@ Lastly we used the NVIDIA visual profiler to see how much memory our code was us
 Because the numerical integration is the only inherently sequential part of the algorithm, we made the choice to minimize calculations during this part of the algorithm. Profiling of the code shows however that it is heavily memory bandwidth bound. This suggest more calculations can be done during integration to improve use of the other computational resources during this part of the algorithm.\\
 
 \subsection{Numerical errors}
-There are two features in the results that merit further discussion. Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the center of figures \ref{fig:82-32k}-\ref{fig:125-32k}). Closer inspection of the unmasked data reveals that there is a sign flip in the winding number of the field lines here, which shows up as white due to the colour scale. We expect that this supposed sign flip is an error in the code, possibly caused by the change in coordinate systems. Since our transformation of Cartesian coordinates to Toroidal coordinates is based on the line data it is possible that this coordinate change becomes inaccurate for small tori. In particular we determine a radius of and normal to a circle around the origin of a field line, and assume that this circle lies inside the torus on which the field line lies. If this circle intersects a cross-section of the torus near the edge of the cross-section all results based on the toroidal coordinate system will contain a small error (whereas it would be perfect if they intersect in the centre of the cross section). If this intersection instead happens outside the torus we can safely say that all winding numbers computed in the toroidal coordinate system are useless. Since in practice the tori on which the field lines lie may be highly elliptical (instead of perfectly circular) the only way to completely avoid this error may be through more thorough analysis of these surfaces.\\
+There are two features in the results that merit further discussion. Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the centers of figure \ref{fig:82-32k}). Closer inspection of the unmasked data reveals that there is a sign flip in the winding number of the field lines here, which shows up as white due to the colour scale. We expect that this supposed sign flip is an error in the code, possibly caused by the change in coordinate systems. Since our transformation of Cartesian coordinates to Toroidal coordinates is based on the line data it is possible that this coordinate change becomes inaccurate for small tori. In particular we determine a radius of and normal to a circle around the origin of a field line, and assume that this circle lies inside the torus on which the field line lies. If this circle intersects a cross-section of the torus near the edge of the cross-section all results based on the toroidal coordinate system will contain a small error (whereas it would be perfect if they intersect in the centre of the cross section). If this intersection instead happens outside the torus we can safely say that all winding numbers computed in the toroidal coordinate system are useless. Since in practice the tori on which the field lines lie may be highly elliptical (instead of perfectly circular) the only way to completely avoid this error may be through more thorough analysis of these surfaces.\\
 
 Secondly it is interesting to consider the differences between figure \ref{fig:125-8k} and figure \ref{fig:125-32k}, in particular the apparent shapes near the center of the cross section. In figure \ref{fig:125-8k} we clearly see shapes with twofold rotational symmetry around the white center, which have disappeard in figure \ref{fig:125-32k}. We suspect that these patterns in the winding numbers may be due to the finite length of the simulated field lines. Since (as mentioned above) the surfaces on which our field lines lie are not perfect tori but rather are slightly elliptical, there are sections of field line where the local winding number is not equal to the global (average) winding number along a line. Therefore after a finite number of data points the average of our simulated line may disagree with the true winding number (corresponding to an infinitely long line). This problem is made far worse by the fact that our toroidal coordinate system is not optimized for correcting this eccentricity, which explains why these features are most prominent at the center of the cross section. A possible solution might be to use a more sophisticated method to extract the global winding number from the local data than the (weighed) average that is currently in place, although it should be noted that most of these methods are hard to parallellize and will therefore significantly slow down the algorithm.\\
 
