@@ -105,6 +105,16 @@ This integration process is inherently sequential, i.e. computations on later RK
 Due to the hardware optimized interpolation we are memory access bound in this part of the algorithm, which we have verified by using the NVIDIA profiler. 
 Thus there was nothing to be gained from parallelizing the integration further than one-thread-per-field-line.
 
+\begin{figure}[!htb]
+\minipage{0.45\textwidth}
+  \includegraphics[width=\linewidth]{Figures/TorusAlphaBeta.pdf}
+\endminipage\hfill
+\minipage{0.45\textwidth}
+  \includegraphics[width=\linewidth]{Figures/torusfit3.png}
+\endminipage
+	\caption{Illustration of the toroidal coordinate system and the normal finding procedure.}\label{fig:coordsys}
+\end{figure}
+
 To compute the winding number of a field line we need to convert to a toroidal coordinate system. Since not all tori of interest are perfectly aligned this means we first have to find the position and orientation of the torus of interest before we can calculate any other relevant parameters.
 
 By averaging the coordinates over a whole field line we find (a good approximation of) the origin of our torus. This summation can be done efficiently in parallel as a reduction. For implementation we implemented most of the methods described by Harris et al.~\cite{harris2007optimizing}.
@@ -203,6 +213,12 @@ In particular we discuss the accuracy of the used method for calculating the mag
 There are two features in the results that merit further discussion. 
 
 \subsubsection{Coordinate system inaccuracy}
+
+\begin{figure}[!hb]
+	\centering
+	\includegraphics{Figures/TorusMismatch.pdf}
+	\caption{ Illustration of the coordinate system mismatch between the calculated torus centre (red) and actual, elliptical, torus.}\label{fig:mismatch}
+\end{figure}
 Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the centers of Figure \ref{fig:82-32k}).
 Closer inspection reveals that there is a sign flip in the winding number of the field lines here, which shows up as white due to the colour scale. 
 
@@ -223,7 +239,7 @@ Secondly it is interesting to consider the differences between Figure \ref{fig:1
 \minipage{0.42\textwidth}
   \includegraphics[width=\linewidth]{Figures/artefact8k.png}
 \endminipage\hfill
-	\caption{Zoom of figure \ref{fig:125-32k} and \ref{fig:125-8k}.}\label{fig:artefacts}
+	\caption{Zoom of Figures \ref{fig:125-32k} and \ref{fig:125-8k}, corresponding to 32k RK4-steps and 8k RK4-steps.}\label{fig:artefacts}
 \end{figure}
 
 
