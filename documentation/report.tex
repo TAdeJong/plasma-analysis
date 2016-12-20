@@ -145,7 +145,7 @@ Note that this is theoretically slower than performing a serial reduction per fi
 
 Any local operations on datapoints of field lines are of course linear in the number of datapoints $mN$ and, as they are local (i.e. fully parallelizable), reduced by a factor of $p$.\\
 On top of all this we expect our code to have a fixed contribution to the runtime from allocating memory, loading the magnetic field and initialising the hardware accellerated structures. We therefore expect the runtime of our code to be approximately linear in the numbers $m$ and $N$, but we do not expect this linear dependence to go through the origin.
-
+\newpage
 \section{Results}
 %{\bf plaatjes, timings + scaling, portability, meer plaatjes: lines, lengths, windings, masking}
 \subsection{Simulated field lines}
@@ -214,12 +214,13 @@ There are two features in the results that merit further discussion.
 
 \subsubsection{Coordinate system inaccuracy}
 
-\begin{figure}[!hb]
+\begin{figure}[!ht]
 	\centering
 	\includegraphics{Figures/TorusMismatch.pdf}
 	\caption{ Illustration of the coordinate system mismatch between the calculated torus centre (red) and actual, elliptical, torus.}\label{fig:mismatch}
 \end{figure}
-Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the centers of Figure \ref{fig:82-32k}).
+
+Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the centers of Figure \ref{fig:82-32k}, better visible in the zoom, Figure \ref{artefacts}).
 Closer inspection reveals that there is a sign flip in the winding number of the field lines here, which shows up as white due to the colour scale. 
 
 We suspect that this sign flip is due to a numerical error in the code, possibly caused by the change in coordinate systems. 
@@ -227,11 +228,12 @@ Since our transformation of Cartesian coordinates to Toroidal coordinates is bas
 In particular we determine a radius of- and normal to- a circle around the origin of a field line, and assume that this circle lies inside the torus on which the field line lies. If this circle intersects a cross-section of the torus near the edge of the cross-section all results based on the toroidal coordinate system will contain a small error (whereas it would be perfect if they intersect in the centre of the cross section). 
 If this intersection instead happens outside the torus we can safely say that all winding numbers computed in the toroidal coordinate system are useless. 
 
-Since in practice the tori on which the field lines lie may be elliptical (instead of perfectly circular), the only way to completely avoid this error may be through more thorough analysis of these surfaces.\\
+Since in practice the tori on which the field lines lie may be elliptical (instead of perfectly circular), the only way to completely avoid this error may be through more thorough analysis of these surfaces.
+
 
 \subsubsection{Finite length}
 Secondly it is interesting to consider the differences between Figure \ref{fig:125-8k} and Figure \ref{fig:125-32k}, in particular the apparent shapes near the center of the cross section, reproduced in Figure \ref{fig:artefacts}.
-\begin{figure}[!hb]
+\begin{figure}[!ht]
 	\centering
 \minipage{0.42\textwidth}
   \includegraphics[width=\linewidth]{Figures/artefact32k.png}
