@@ -43,6 +43,7 @@ is conserved. Therefore the initial value of this integral restricts the possibl
 
 \subsection{Methods}
 The goal of this project is to determine topological properties of a pre-computed magnetic field resulting from a magnetohydrodynamical simulation.\\
+To compute these properties we used a CUDA computer code, which is available on Github\footnote{\url{https://github.com/TAdeJong/plasma-analysis}}.
 Our code is split into two main segments. Firstly we numerically integrate the magnetic field to obtain (a numerical approximation of) a field line in the plasma. 
 Secondly we compute several properties of the magnetic field using this field line, such as the length of the line (which estimates the average field strength), the center of the line (estimating the origin of the torus on which it lies) and its winding number, i.e. its contribution to the total helicity of the magnetic field.\\
 Both steps can be parallelized heavily. To parallelize the numerical integration of the magnetic field we simply consider more than one field line at a time. In the second step we not only consider multiple field lines at once, but also parallelize the computation of the aforementioned parameters per field line.\\
