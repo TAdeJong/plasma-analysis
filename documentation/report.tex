@@ -234,7 +234,7 @@ We conclude that this is the amount of time that it takes to load the vector fie
 \section{Suggestions for future work}
 
 \subsection{Interpolation}
-Better algorithms exist for interpolation, most notably cubic interpolation and interpolation schemes which preserve the zero divergence of the magnetic field~\cite{McNally01052011}. It is possible that these algorithms could further reduce numerical artefacts. %TODO Which artefacts.
+Better algorithms exist for interpolation, most notably cubic interpolation and interpolation schemes which preserve the zero divergence of the magnetic field~\cite{McNally01052011}. It is possible that these algorithms could further reduce numerical artefacts. 
 Notably, efficient and open source implementations in CUDA of cubic interpolation exist~\cite{Ruijters01012012}.
 
 \subsection{Integration}
@@ -243,7 +243,11 @@ Also worth mentioning is that the RK4 integration method uses no special propert
 
 \subsection{Optimization}
 We remarked before that profiling the code revealed that the algorithm is both memory bound and memory access bound. 
+
 A possible optimization would be to increase the computational load during the integration of the magnetic field, for example pre-calculating some of the properties required later.
+
+Another optimization opportunity is the memory usage. In the current code a lot of memory is used for computing the normal vectors and scalar fields. Efficient reuse of memory could reduce total memory usage per field line, enabling more field lines to be treated in parallel.
+
 
 
 \newpage
