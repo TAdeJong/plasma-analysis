@@ -105,16 +105,6 @@ This integration process is inherently sequential, i.e. computations on later RK
 Due to the hardware optimized interpolation we are memory access bound in this part of the algorithm, which we have verified by using the NVIDIA profiler. 
 Thus there was nothing to be gained from parallelizing the integration further than one-thread-per-field-line.
 
-\begin{figure}[!htb]
-\minipage{0.45\textwidth}
-  \includegraphics[width=\linewidth]{Figures/TorusAlphaBeta.pdf}
-\endminipage\hfill
-\minipage{0.45\textwidth}
-  \includegraphics[width=\linewidth]{Figures/torusfit3.png}
-\endminipage
-	\caption{Illustration of the toroidal coordinate system and the normal finding procedure.}\label{fig:coordsys}
-\end{figure}
-
 To compute the winding number of a field line we need to convert to a toroidal coordinate system. Since not all tori of interest are perfectly aligned this means we first have to find the position and orientation of the torus of interest before we can calculate any other relevant parameters.
 
 By averaging the coordinates over a whole field line we find (a good approximation of) the origin of our torus. This summation can be done efficiently in parallel as a reduction. For implementation we implemented most of the methods described by Harris et al.~\cite{harris2007optimizing}.
@@ -123,6 +113,16 @@ Next we need to calculate the orientation of the torus, in particular the normal
 We can find this normal by taking the cross product of the direction of a field line (the $\vec{B}$-field) at a point and the location vector of that point. We perform this local calculation for each point on our field line and implement a similar parallel reduction as before to find the orientation of our torus.
 
 The last part of the torus coordinate system needed is the (center) radius of the torus. For this we calculate the average distance from the origin in the projection onto the plane of the torus. %This is error prone, see discussion.
+
+\begin{figure}[!htb]
+\minipage{0.47\textwidth}
+  \includegraphics[width=\linewidth]{Figures/TorusAlphaBeta.pdf}
+\endminipage\hfill
+\minipage{0.47\textwidth}
+  \includegraphics[width=\linewidth]{Figures/torusfit3.png}
+\endminipage
+	\caption{Illustration of the toroidal coordinate system and the normal finding procedure. The red circle is a circle through the torus, lying in a plane perpendicular to the torus normal and with radius equal to the center radius of the torus. From this circle we can compute the $\alpha$- and $\beta$-coordinates, i.e. the toroidal and poloidal coordinates respecively, of a point on the torus surface.}\label{fig:coordsys}
+\end{figure}
 
 With this coordinate system calculating the winding numbers of the field lines is as simple as calculating the difference in both poloidal and toroidal coordinates between consecutive data points and summing these along a field line. This is once again implemented as a parallel reduction.
 
@@ -220,19 +220,18 @@ There are two features in the results that merit further discussion.
 	\caption{ Illustration of the coordinate system mismatch between the calculated torus centre (red) and actual, elliptical, torus.}\label{fig:mismatch}
 \end{figure}
 
-Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the centers of Figure \ref{fig:82-32k}, better visible in the zoom, Figure \ref{artefacts}).
+Firstly we remark that near the center of each of the cross-sections the winding numbers behave oddly (the small white dots in the centers of Figure \ref{fig:82-32k}, better visible in the zoom, Figure \ref{fig:artefacts}).
 Closer inspection reveals that there is a sign flip in the winding number of the field lines here, which shows up as white due to the colour scale. 
 
 We suspect that this sign flip is due to a numerical error in the code, possibly caused by the change in coordinate systems. 
 Since our transformation of Cartesian coordinates to Toroidal coordinates is based on the line data, this coordinate change is likely to be inaccurate for small tori. 
-In particular we determine a radius of- and normal to- a circle around the origin of a field line, and assume that this circle lies inside the torus on which the field line lies. If this circle intersects a cross-section of the torus near the edge of the cross-section all results based on the toroidal coordinate system will contain a small error (whereas it would be perfect if they intersect in the centre of the cross section). 
-If this intersection instead happens outside the torus we can safely say that all winding numbers computed in the toroidal coordinate system are useless. 
+In particular we determine a center circle for each of the nested tori (the red circle in Figure \ref{fig:coordsys}), and assume that this circle lies inside the torus in question. For perfect tori this is always the case, but the field lines fill a surface that is only approximately toroidal. Furthermore numerical errors influence our estimate of the center circle. Due to both these effects the center circle might not fully lie in the center of the torus, as depicted in Figure \ref{fig:mismatch}. This copmletely invalidates all calculations done in the toroidal coordinate system, explaining the wildy different value of the winding number.
 
-Since in practice the tori on which the field lines lie may be elliptical (instead of perfectly circular), the only way to completely avoid this error may be through more thorough analysis of these surfaces.
+Since in practice the tori on which the field lines lie may be elliptical (instead of perfectly circular), the only way to completely avoid this error may be through more thorough analysis of these surfaces to find a coordinate system which takes this non-circularity into account.
 
 
 \subsubsection{Finite length}
-Secondly it is interesting to consider the differences between Figure \ref{fig:125-8k} and Figure \ref{fig:125-32k}, in particular the apparent shapes near the center of the cross section, reproduced in Figure \ref{fig:artefacts}.
+Secondly it is interesting to consider the differences between Figure \ref{fig:125-8k} and Figure \ref{fig:125-32k}, in particular the apparent shapes near the center of the cross section. These centers are reproduced below in Figure \ref{fig:artefacts}.
 \begin{figure}[!ht]
 	\centering
 \minipage{0.42\textwidth}
@@ -241,7 +240,7 @@ Secondly it is interesting to consider the differences between Figure \ref{fig:1
 \minipage{0.42\textwidth}
   \includegraphics[width=\linewidth]{Figures/artefact8k.png}
 \endminipage\hfill
-	\caption{Zoom of Figures \ref{fig:125-32k} and \ref{fig:125-8k}, corresponding to 32k RK4-steps and 8k RK4-steps.}\label{fig:artefacts}
+	\caption{Zoom of Figures \ref{fig:125-32k} and \ref{fig:125-8k}, corresponding to 32k RK4-steps and 8k RK4-steps respectively.}\label{fig:artefacts}
 \end{figure}
 
 
@@ -249,8 +248,8 @@ In Figure \ref{fig:125-8k} we clearly see shapes with twofold rotational symmetr
 We suspect that these patterns in the winding numbers may be due to the finite length of the simulated field lines. 
 
 As mentioned above, the surfaces on which our field lines lie are not perfect tori but rather are slightly elliptical. This implies there are sections of field line where the local winding number is not equal to the global (average) winding number along a line. 
-Therefore after a finite number of data points the average of our simulated line may disagree with the true winding number (corresponding to an infinitely long line). 
-This problem is made far worse by the fact that our toroidal coordinate system is not optimized for correcting this eccentricity, which explains why these features are most prominent at the center of the cross section. 
+Therefore after a finite length of field line the average of our simulated line may disagree with the true winding number (corresponding to an infinitely long line). 
+This problem is made worse by the fact that our toroidal coordinate system is not optimized for correcting this eccentricity, which explains why these features are most prominent at the center of the cross section. 
 
 A possible solution might be to use a more sophisticated method to extract the winding number from the local data than the (weighed) average that is currently in place, although it should be noted that most of these methods are hard to parallellize and will therefore significantly slow down the algorithm.\\
 
