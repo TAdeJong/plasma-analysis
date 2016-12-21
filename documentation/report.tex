@@ -18,9 +18,9 @@
 
 \section{Introduction}
 %{\bf Fysische achtergrond, motivatie voor numeriek. Bonuspunten voor gebruik van het woord Topologisch }
-In this project we will numerically determine some topological properties of magnetic field lines in a plasma.
+In this project some topological properties of magnetic field lines in a plasma are determined.
 The numerical computations involved are heavily parallelizable. 
-For this reason computations are done on a GPU, which can run thousands threads in parallel, instead of the CPU which on modern computers can only run $\sim$10 parallel processes.
+For this reason computations are performed on a GPU, which can run thousands threads in parallel, instead of the CPU which on modern computers can only run $\sim$10 parallel processes.
 We use CUDA to write code to efficiently calculate the topological properties of magnetic field lines as generated in recent full-magnetohydrodynamical numerical studies of magnetic reconnection.~\cite{PhysRevLett.115.095001}
 
 This work concentrates on plasmas in which the field lines have a non-trivial topological order, such as interlocking rings. 
@@ -43,12 +43,12 @@ An interesting observation made by \cite{taylor1986relaxation} is that in an ide
 is conserved. Therefore the initial value of this integral restricts the possible long-term dynamics of a plasma. 
 
 In particular we are working with a dataset of highly helical initial data, in which case the field lines will align themselves along the surfaces of nested tori. 
-A line on the surface of a torus can be associated with a winding number, which is the ratio of the winding along the toroidal axis (denoted with $\alpha$) and the winding along the poloidal axis (denoted $\beta$). 
+A line on the surface of a torus can be associated with a winding number, which is the ratio of the winding along the toroidal axis (denoted with $\alpha$) and the winding along the poloidal axis (denoted $\beta$, see Figure \ref{fig:coordsys}). 
 To calculate a field line and its winding numbers we will use numerical integration as described in more detail below.
 
 
 \subsection{Methods}
-To compute the properties of interest we use a CUDA program.\footnote{Full code available on Github: \url{https://github.com/TAdeJong/plasma-analysis}}.
+To compute the properties of interest we use a CUDA program.\footnote{Full code available on Github: \url{https://github.com/TAdeJong/plasma-analysis}}
 Our code is split into two main segments. 
 
 Firstly we numerically integrate the magnetic field to obtain an approximation of a field line in the plasma. 
@@ -68,7 +68,7 @@ This is done by defining a rectangular grid in space and saving the components o
 
 There are two ways to save all the components: either separate the components and save a three-dimensional array for each component of the vector field (three $N\times N\times N$ arrays), or save one large array of which each component contains the whole vector at the corresponding gridpoint (one $N\times N\times N$ array of $3D$ vectors).
 
-Since numerical integration algorithms will use all the components of the field at a point at the same time we use the second method. %Or do we? Ik weet eigenlijk niet hoe een 3D texture van binnen werkt...
+Since numerical integration algorithms will use all the components of the field at a point at the same time we use the second method. 
 This choice of representation is both physically intuitive as well as efficient, since it will improve cache coherency and therefore access times.
 
 \subsubsection{Interpolation}
@@ -78,10 +78,10 @@ We therefore want to interpolate the vector field to get a good approximation of
 The simplest method for interpolation is linear interpolation, for 3D data known as trilinear interpolation.
 
 Interpolation of two- and even three-dimensional data is used in graphics processing in order to map images onto three-dimensional objects. 
-In GPU-parlance this is known as texturing. Because this problem is very important in graphics processing, modern GPU's have efficient texturing units, performing hardware accelerated trilinear interpolation.
+In GPU-parlance this is known as texturing. As this problem is very important in graphics processing, modern GPU's have efficient texturing units, performing hardware accelerated trilinear interpolation.
 
 Using CUDA enables us to use this hardware accelerated interpolation by storing our vector field data as a texture. 
-Since every RK4-step needs at least 4 vector field fetches this acceleration significantly speeds up the numerical integration. %alhoewel we dit natuurlijk niet gemeten hebben.
+Since every RK4-step needs at least 4 vector field fetches, this acceleration significantly speeds up the numerical integration. 
 
 \subsection{Runge-Kutta method}
 For line integration the fourth order Runge-Kutta method (RK4) was used.  This method is known as a good allround integration method.
@@ -121,7 +121,7 @@ The last part of the torus coordinate system needed is the (center) radius of th
 \minipage{0.47\textwidth}
   \includegraphics[width=\linewidth]{Figures/torusfit3.png}
 \endminipage
-	\caption{Illustration of the toroidal coordinate system and the normal finding procedure. The red circle is a circle through the torus, lying in a plane perpendicular to the torus normal and with radius equal to the center radius of the torus. From this circle we can compute the $\alpha$- and $\beta$-coordinates, i.e. the toroidal and poloidal coordinates respecively, of a point on the torus surface.}\label{fig:coordsys}
+	\caption{Illustration of the toroidal coordinate system and the normal finding procedure. The red circle is a circle through the torus, lying in a plane perpendicular to the torus normal and with radius equal to the center radius of the torus. From this circle we can compute the $\alpha$- and $\beta$-coordinates, i.e. the toroidal and poloidal coordinates respectively, of a point on the torus surface.}\label{fig:coordsys}
 \end{figure}
 
 With this coordinate system calculating the winding numbers of the field lines is as simple as calculating the difference in both poloidal and toroidal coordinates between consecutive data points and summing these along a field line. This is once again implemented as a parallel reduction.
