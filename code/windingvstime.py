@@ -14,10 +14,10 @@ elif (len(sys.argv) > 2) :
 	fuz = float(sys.argv[2])
 binfile = sys.argv[1]
 linedata = []
-minLength = 200.0
-tend = 151
-tbegin = 80
-for i in np.linspace(tbegin,tend,15) :
+minLength = 400.0
+tend = 290
+tbegin = 0
+for i in np.linspace(tbegin,tend,30) :
     lengthdata=np.fromfile(binfile+str(int(i))+'_lengths.bin', dtype="float32")
     winddata=np.fromfile(binfile+str(int(i))+'_windings.bin', dtype="float32")
     datasize = int(np.sqrt(lengthdata.shape[0]))
