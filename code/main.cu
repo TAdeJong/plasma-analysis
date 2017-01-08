@@ -126,12 +126,13 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	unsigned int steps = 32*blockSize;
+	unsigned int steps = 8*blockSize;
 	float dt = 0;
 
 	dim3 BIGgridSize(32,32);
 	dim3 gridSizeRK4(2,2);
 	dim3 blockSizeRK4(32,32); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GB VRAM
+	//gridsizeRK4*blockSizeRK4 should be at least 2*blockSize
 
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
@@ -183,7 +184,7 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
 	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
-
+	std::cout << "Je moeder is mis" << std::endl;
 	RK4init<<<gridSizeRK4,blockSizeRK4,0>>>(d_lengths, BIGstartloc, BIGxvec, BIGyvec);
 	reduceSum<float><<<gridSizeRK4.x*gridSizeRK4.y/2,blockSizeRK4.x*blockSizeRK4.y,blockSizeRK4.x*blockSizeRK4.y*sizeof(float)>>>
 		(d_lengths, d_lengths);
@@ -203,49 +204,58 @@ int main(int argc, char *argv[]) {
 	RK4line<<<gridSizeRK4,blockSizeRK4,0>>>(d_lines, dt, steps, centreEdgeGuess, centrexvec, centreyvec);
 	reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>
 		(d_lines, d_origins);
-	reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>
+	reduceSum<float4><<<dataCount/(4*blockSize*blockSize),blockSize,blockSize*sizeof(float4)>>>
 		(d_origins, d_origins);
-	reduceSum<float4><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float4)>>>
+	reduceSum<float4><<<1,dataCount/(8*blockSize*blockSize),dataCount/(8*blockSize*blockSize)*sizeof(float4)>>>
 		(d_origins, d_origin);
 	divide<<<1,1,0>>>
 		(d_origin,(float)dataCount, d_origin);
+//	float4 h_origin;
+//	checkCudaErrors(cudaMemcpy(&h_origin, d_origin, sizeof(float4),cudaMemcpyDeviceToHost));
+//	std::cout << h_origin.y << std::endl;
 
 	normal<<<dataCount/blockSize,blockSize,0>>>
-		(d_lines, d_normals, *d_origin, steps);
+		(d_lines, d_normals, d_origin);
 	reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>
 		(d_normals, d_normals);
-	reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>
+	reduceSum<float4><<<dataCount/(4*blockSize*blockSize),blockSize,blockSize*sizeof(float4)>>>
 		(d_normals, d_normals);
-	reduceSum<float4><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float4)>>>
+	reduceSum<float4><<<1,dataCount/(8*blockSize*blockSize),dataCount/(8*blockSize*blockSize)*sizeof(float4)>>>
 		(d_normals, d_normal);
 	divide<<<1,1,0>>>
 		(d_normal,(float)dataCount, d_normal);//not size-scalable!!!
-
+	float4 h_normal;
+	checkCudaErrors(cudaMemcpy(&h_normal, d_normal, sizeof(float4),cudaMemcpyDeviceToHost));
+	std::cout << h_normal.x << ", y:" << h_normal.y << ", z: " <<h_normal.z << std::endl;
 	//Compute the distance from the origin in the xy plane of each point
 	rxy<<<dataCount/blockSize,blockSize,0>>>
-		(d_lines, d_radiimin, (float)steps, d_origins[0], d_normals[0], steps);
+		(d_lines, d_radiimin, (float)steps, d_origin, d_normal);
 	rxy<<<dataCount/blockSize,blockSize,0>>>
-		(d_lines, d_radiimax, (float)steps, d_origins[0], d_normals[0], steps);
+		(d_lines, d_radiimax, (float)steps, d_origin, d_normal);
 
 	//minmax these distances to find the torus radius
 	reduceMin<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>
 		(d_radiimin,d_radiimin);
 	reduceMin<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>
 		(d_radiimin,d_radiimin);
-	reduceMax<float><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float)>>>
+	reduceMax<float><<<dataCount/(2*blockSize*steps),blockSize,blockSize*sizeof(float)>>>
+		(d_radiimin,d_radiimin);
+	reduceMax<float><<<1,dataCount/(4*blockSize*steps),dataCount/(4*blockSize*steps)*sizeof(float)>>>
 		(d_radiimin,d_radiimin);
 	float radiimin,radiimax;
 	checkCudaErrors(cudaMemcpy(&radiimin, d_radiimin, sizeof(float),cudaMemcpyDeviceToHost));
-
+	
 	reduceMax<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>
 		(d_radiimax,d_radiimax);
 	reduceMax<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>
 		(d_radiimax,d_radiimax);
-	reduceMin<float><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float)>>>
+	reduceMin<float><<<dataCount/(2*blockSize*steps),blockSize,blockSize*sizeof(float)>>>
+		(d_radiimax,d_radiimax);
+	reduceMin<float><<<1,dataCount/(4*blockSize*steps),dataCount/(4*blockSize*steps)*sizeof(float)>>>
 		(d_radiimax,d_radiimax);
 	checkCudaErrors(cudaMemcpy(&radiimax, d_radiimax, sizeof(float),cudaMemcpyDeviceToHost));
 	std::cout << "min: " << radiimin << ", max: " << radiimax << std::endl;
-
+	average<<<1,1,0>>>(d_radiimax,d_radiimin,d_radius);
 
 	cudaFree(d_radiimin);
 	cudaFree(d_radiimax);
@@ -367,7 +377,7 @@ int main(int argc, char *argv[]) {
 //			cudaDeviceSynchronize();	
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, 
-*d_origin, *d_radius, *d_normal, steps);
+d_origin, d_radius, d_normal, steps);
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			//This code is dependent on completion of winding, but independent on d_lines

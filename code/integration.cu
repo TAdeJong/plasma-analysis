@@ -77,11 +77,11 @@ __global__ void lineLength(float4* g_linedata, double dt, float* g_lengthoutput)
 	g_lengthoutput[index] = Lengthstep(g_linedata[index],dt);
 }
 
-__global__ void rxy(float4* g_linedata, float* radius, const float norm, float4 offset, float4 
-normal, unsigned int steps) {
+__global__ void rxy(float4* g_linedata, float* radius, const float norm, float4* offset, float4* 
+normal) {
 	int index = blockIdx.x*blockDim.x + threadIdx.x;
-	float4 locCord = g_linedata[index]-offset;
+	float4 locCord = g_linedata[index]-*offset;
 //	locCord /= norm;//don't ask
-	locCord = RotateCoord(locCord, normal);
+	locCord = RotateCoord(locCord, *normal);
 	radius[index] = length(make_float2(locCord.x,locCord.y));
 }

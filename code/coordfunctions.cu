@@ -42,3 +42,9 @@ __device__ float4 Cart2Tor(float4 locSmiet, float4 znew, float R) {
 	return make_float4(r,alpha,beta,0);
 }
 
+__global__ void average (float* a, float* b, float* mean) {
+	int i = blockIdx.x*blockDim.x + threadIdx.x;
+	mean[i] = (a[i]+b[i])/2;
+}
+	
+

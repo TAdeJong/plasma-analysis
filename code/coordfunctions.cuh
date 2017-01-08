@@ -13,4 +13,6 @@ __device__ float4 Cart2Sphere(float4 locSmiet);
 
 __device__ float4 Cart2Tor(float4 locSmiet, float4 znew, float r);
 
+__global__ void average (float* a, float* b, float* mean);
+
 #endif

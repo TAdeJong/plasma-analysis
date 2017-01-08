@@ -45,15 +45,16 @@ __global__ void reducePC(float4* g_linedata, int* g_PCdata) {
 	if(tid == 0) g_PCdata[blockIdx.x] = idata[0];
 }
 
-__global__ void normal(float4* g_linedata, float4* g_normaldata, float4 g_origin, unsigned int steps) {
+__global__ void normal(float4* g_linedata, float4* g_normaldata, float4* g_origin) {
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 	float4 locCord = g_linedata[i];
-	float4 shiftedCord = ShiftCoord(g_linedata[i], g_origin);
+	float4 shiftedCord = ShiftCoord(locCord, *g_origin);
 	g_normaldata[i] = make_float4(cross(
 				make_float3(shiftedCord),
 			       	make_float3(tex3D(dataTex, Smiet2Tex(locCord)))
 				));
 }
+
 /*	Warning: absolutely useless!
 	Mathematics is not correct, does not give normal to plane of torus!!
 		DO NOT USE
@@ -87,12 +88,12 @@ __global__ void reduceNormal(float4* g_linedata, float4* g_normaldata) {//equiva
 	if(tid == 0) g_normaldata[blockIdx.x] = sdata[0];
 }*/
 
-__global__ void winding(float4* g_linedata, float* g_alpha, float* g_beta, float4 d_origin, float g_r, 
-float4 d_normal, unsigned int steps) {
+__global__ void winding(float4* g_linedata, float* g_alpha, float* g_beta, float4* d_origin, float* g_r, 
+float4* d_normal, unsigned int steps) {
 	unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned int modifier = min(i%steps,1);
-	float4 locCord = Cart2Tor(ShiftCoord(g_linedata[i], d_origin), d_normal, g_r);
-	locCord -= Cart2Tor(ShiftCoord(g_linedata[i-modifier], d_origin), d_normal, g_r);
+	float4 locCord = Cart2Tor(ShiftCoord(g_linedata[i], *d_origin), *d_normal, *g_r);
+	locCord -= Cart2Tor(ShiftCoord(g_linedata[i-modifier], *d_origin), *d_normal, *g_r);
 	//lelijk en langzaam, maar mijn bit-wise magic is niet genoeg om dit netjes te doen
 	if(locCord.y > PI/2.0) {
 		locCord.y -= PI;
