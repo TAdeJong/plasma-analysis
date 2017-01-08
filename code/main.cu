@@ -153,9 +153,9 @@ int main(int argc, char *argv[]) {
 
 	//Allocate space to store origin data
 	float4 *d_origins;
-//	       *h_origins;
 	checkCudaErrors(cudaMalloc(&d_origins, dataCount/(2*blockSize)*sizeof(float4)));
-//	h_origins = (float4*) malloc(BIGnroflines * sizeof(float4));
+	float4 *d_origin;
+	checkCudaErrors(cudaMalloc(&d_origin, sizeof(float4)));
 
 	//Allocating the array to store the length data, both for host and device
 	float *d_lengths, *h_lengths;
@@ -167,12 +167,16 @@ int main(int argc, char *argv[]) {
 
 	float4 *d_normals;
 	checkCudaErrors(cudaMalloc(&d_normals, dataCount*sizeof(float4)));
+	float4 *d_normal;
+	checkCudaErrors(cudaMalloc(&d_normal, sizeof(float4)));
+
 
 	//Allocating the array to store the radius data, both for host and device
-	float *d_radii;
+	float *d_radius, *d_radiimin, *d_radiimax;
 //	      *h_radii;
-	checkCudaErrors(cudaMalloc(&d_radii, dataCount*sizeof(float)));
-//	h_radii = (float*) malloc(BIGnroflines*sizeof(float));
+	checkCudaErrors(cudaMalloc(&d_radiimin, dataCount*sizeof(float)));
+	checkCudaErrors(cudaMalloc(&d_radiimax, dataCount*sizeof(float)));
+	checkCudaErrors(cudaMalloc(&d_radius, sizeof(float4)));
 
 	//Allocating arrays to store the alpha and beta data to compute winding numbers.
 	float *d_alpha, *d_beta;
@@ -189,6 +193,64 @@ int main(int argc, char *argv[]) {
 	dt/=(float)(dataCount/steps);
 	std::cout << "B_length mean = " << dt << std::endl;
 	dt = (1.0/32.0)/dt;
+
+	float cent_fac = 1/4.;
+	float4 centreEdgeGuess = BIGstartloc+(BIGxvec+BIGyvec)*(1-cent_fac)/2.0;
+
+	float4 centrexvec = BIGxvec*cent_fac;
+	float4 centreyvec = BIGyvec*cent_fac;
+
+	RK4line<<<gridSizeRK4,blockSizeRK4,0>>>(d_lines, dt, steps, centreEdgeGuess, centrexvec, centreyvec);
+	reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>
+		(d_lines, d_origins);
+	reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>
+		(d_origins, d_origins);
+	reduceSum<float4><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float4)>>>
+		(d_origins, d_origin);
+	divide<<<1,1,0>>>
+		(d_origin,(float)dataCount, d_origin);
+
+	normal<<<dataCount/blockSize,blockSize,0>>>
+		(d_lines, d_normals, *d_origin, steps);
+	reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>
+		(d_normals, d_normals);
+	reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4)>>>
+		(d_normals, d_normals);
+	reduceSum<float4><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float4)>>>
+		(d_normals, d_normal);
+	divide<<<1,1,0>>>
+		(d_normal,(float)dataCount, d_normal);//not size-scalable!!!
+
+	//Compute the distance from the origin in the xy plane of each point
+	rxy<<<dataCount/blockSize,blockSize,0>>>
+		(d_lines, d_radiimin, (float)steps, d_origins[0], d_normals[0], steps);
+	rxy<<<dataCount/blockSize,blockSize,0>>>
+		(d_lines, d_radiimax, (float)steps, d_origins[0], d_normals[0], steps);
+
+	//minmax these distances to find the torus radius
+	reduceMin<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>
+		(d_radiimin,d_radiimin);
+	reduceMin<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>
+		(d_radiimin,d_radiimin);
+	reduceMax<float><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float)>>>
+		(d_radiimin,d_radiimin);
+	float radiimin,radiimax;
+	checkCudaErrors(cudaMemcpy(&radiimin, d_radiimin, sizeof(float),cudaMemcpyDeviceToHost));
+
+	reduceMax<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float)>>>
+		(d_radiimax,d_radiimax);
+	reduceMax<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float)>>>
+		(d_radiimax,d_radiimax);
+	reduceMin<float><<<1,dataCount/(2*steps),dataCount/(2*steps)*sizeof(float)>>>
+		(d_radiimax,d_radiimax);
+	checkCudaErrors(cudaMemcpy(&radiimax, d_radiimax, sizeof(float),cudaMemcpyDeviceToHost));
+	std::cout << "min: " << radiimin << ", max: " << radiimax << std::endl;
+
+
+	cudaFree(d_radiimin);
+	cudaFree(d_radiimax);
+
+
 
 
 	//Set up streams for independent execution
@@ -262,7 +324,7 @@ int main(int argc, char *argv[]) {
 			cudaStreamSynchronize(lengths);
 			//Make sure data from previous iteration is copied away to host
 			cudaStreamSynchronize(windings2);
-			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
+/*			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
 			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4),windings>>>
 				(d_lines, d_origins);
 			reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4),windings>>>
@@ -301,11 +363,11 @@ int main(int argc, char *argv[]) {
 				(d_radii,d_radii);
 
 
-
+*/
 //			cudaDeviceSynchronize();	
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, 
-d_origins, d_radii, d_normals, steps);
+*d_origin, *d_radius, *d_normal, steps);
 
 			//Adding the steps Deltaalpha and Deltabeta to find overall windings
 			//This code is dependent on completion of winding, but independent on d_lines
@@ -352,7 +414,7 @@ d_origins, d_radii, d_normals, steps);
 			//Free the remaining device pointers
 			cudaFree(d_alpha);
 			cudaFree(d_beta);
-			cudaFree(d_radii);
+			cudaFree(d_radius);
 			cudaFree(d_lengths);
 			cudaFree(d_origins);
 			cudaFree(d_lines);
