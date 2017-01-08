@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 
 	//Set integration parameters (end time, number of steps, etc.)
 	const int blockSize = 1024;
-	unsigned int steps = 8*blockSize;
+	unsigned int steps = 32*blockSize;
 	float dt = 0;
 
 	dim3 BIGgridSize(32,32);
@@ -158,33 +158,13 @@ int main(int argc, char *argv[]) {
 	float4 *d_origin;
 	checkCudaErrors(cudaMalloc(&d_origin, sizeof(float4)));
 
+
 	//Allocating the array to store the length data, both for host and device
 	float *d_lengths, *h_lengths;
 	checkCudaErrors(cudaMalloc(&d_lengths, dataCount*sizeof(float)));
 	status = cudaMallocHost((void**)&h_lengths, BIGnroflines*sizeof(float));
 	if (status != cudaSuccess)
 		printf("Error allocating pinned host memory.\n");
-	//Allocating Origins
-
-	float4 *d_normals;
-	checkCudaErrors(cudaMalloc(&d_normals, dataCount*sizeof(float4)));
-	float4 *d_normal;
-	checkCudaErrors(cudaMalloc(&d_normal, sizeof(float4)));
-
-
-	//Allocating the array to store the radius data, both for host and device
-	float *d_radius, *d_radiimin, *d_radiimax;
-//	      *h_radii;
-	checkCudaErrors(cudaMalloc(&d_radiimin, dataCount*sizeof(float)));
-	checkCudaErrors(cudaMalloc(&d_radiimax, dataCount*sizeof(float)));
-	checkCudaErrors(cudaMalloc(&d_radius, sizeof(float4)));
-
-	//Allocating arrays to store the alpha and beta data to compute winding numbers.
-	float *d_alpha, *d_beta;
-	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
-	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
-
-	std::cout << "Je moeder is mis" << std::endl;
 	RK4init<<<gridSizeRK4,blockSizeRK4,0>>>(d_lengths, BIGstartloc, BIGxvec, BIGyvec);
 	reduceSum<float><<<gridSizeRK4.x*gridSizeRK4.y/2,blockSizeRK4.x*blockSizeRK4.y,blockSizeRK4.x*blockSizeRK4.y*sizeof(float)>>>
 		(d_lengths, d_lengths);
@@ -194,6 +174,7 @@ int main(int argc, char *argv[]) {
 	dt/=(float)(dataCount/steps);
 	std::cout << "B_length mean = " << dt << std::endl;
 	dt = (1.0/32.0)/dt;
+	cudaFree(d_lengths);
 
 	float cent_fac = 1/4.;
 	float4 centreEdgeGuess = BIGstartloc+(BIGxvec+BIGyvec)*(1-cent_fac)/2.0;
@@ -213,6 +194,13 @@ int main(int argc, char *argv[]) {
 //	float4 h_origin;
 //	checkCudaErrors(cudaMemcpy(&h_origin, d_origin, sizeof(float4),cudaMemcpyDeviceToHost));
 //	std::cout << h_origin.y << std::endl;
+	cudaFree(d_origins);
+
+
+	float4 *d_normals;
+	checkCudaErrors(cudaMalloc(&d_normals, dataCount*sizeof(float4)));
+	float4 *d_normal;
+	checkCudaErrors(cudaMalloc(&d_normal, sizeof(float4)));
 
 	normal<<<dataCount/blockSize,blockSize,0>>>
 		(d_lines, d_normals, d_origin);
@@ -227,6 +215,15 @@ int main(int argc, char *argv[]) {
 	float4 h_normal;
 	checkCudaErrors(cudaMemcpy(&h_normal, d_normal, sizeof(float4),cudaMemcpyDeviceToHost));
 	std::cout << h_normal.x << ", y:" << h_normal.y << ", z: " <<h_normal.z << std::endl;
+	
+	cudaFree(d_normals);
+
+	//Allocating the array to store the radius data, both for host and device
+	float *d_radius, *d_radiimin, *d_radiimax;
+	checkCudaErrors(cudaMalloc(&d_radiimin, dataCount*sizeof(float)));
+	checkCudaErrors(cudaMalloc(&d_radiimax, dataCount*sizeof(float)));
+	checkCudaErrors(cudaMalloc(&d_radius, sizeof(float4)));
+
 	//Compute the distance from the origin in the xy plane of each point
 	rxy<<<dataCount/blockSize,blockSize,0>>>
 		(d_lines, d_radiimin, (float)steps, d_origin, d_normal);
@@ -259,9 +256,11 @@ int main(int argc, char *argv[]) {
 
 	cudaFree(d_radiimin);
 	cudaFree(d_radiimax);
-
-
-
+	
+	//Declaring arrays to save the winding data
+	float *d_alpha, *d_beta;
+	checkCudaErrors(cudaMalloc(&d_alpha, dataCount*sizeof(float)));
+	checkCudaErrors(cudaMalloc(&d_beta, dataCount*sizeof(float)));
 
 	//Set up streams for independent execution
 	cudaStream_t RK4, windings, windings2, lengths;
@@ -269,7 +268,6 @@ int main(int argc, char *argv[]) {
 	status = cudaStreamCreate(&windings);
 	status = cudaStreamCreate(&windings2);
 	status = cudaStreamCreate(&lengths);
-
 
 	//Start main loop.
 	for (int yindex = 0; yindex < BIGgridSize.y; yindex += gridSizeRK4.y) {
@@ -426,7 +424,7 @@ d_origin, d_radius, d_normal, steps);
 			cudaFree(d_beta);
 			cudaFree(d_radius);
 			cudaFree(d_lengths);
-			cudaFree(d_origins);
+			cudaFree(d_origin);
 			cudaFree(d_lines);
 
 //Print some data to screen
@@ -435,7 +433,7 @@ d_origin, d_radius, d_normal, steps);
 //Write some data
 //	float4write("../datadir/linedata.bin", BIGdataCount, h_lines);
 	name = name.substr(name.rfind("/")+1,name.rfind(".")-name.rfind("/")-1);
-	const std::string prefix = "../datadir/";
+	const std::string prefix = "../datadir/shafranov3/";
 	std::string suffix = "_windings.bin";
 	std::string path = prefix+name+suffix;
 	floatwrite(path.c_str(), BIGnroflines, h_windingdata);
