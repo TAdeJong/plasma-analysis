@@ -14,15 +14,17 @@ elif (len(sys.argv) > 2) :
 	fuz = float(sys.argv[2])
 binfile = sys.argv[1]
 linedata = []
-for i in np.linspace(290,0,15) :
+minLength = 200.0
+tend = 151
+tbegin = 80
+for i in np.linspace(tbegin,tend,15) :
     lengthdata=np.fromfile(binfile+str(int(i))+'_lengths.bin', dtype="float32")
-    minLength = 200.0
     winddata=np.fromfile(binfile+str(int(i))+'_windings.bin', dtype="float32")
     datasize = int(np.sqrt(lengthdata.shape[0]))
     lengthdata=lengthdata.reshape(datasize, datasize)
     winddata=winddata.reshape(datasize, datasize)
     masked= ma.masked_where(lengthdata<minLength,winddata)
-    masked = masked.filled(0)
+#    masked = masked.filled(0)
     linedata.append((masked[datasize/2,:],str(int(i))))
 fig = plt.figure()
 ax = fig.add_subplot(111)
@@ -31,8 +33,8 @@ cmap = matplotlib.cm.get_cmap('jet')
 #Wist je dat dit ook zonder forloop kan?
 for dataset,i in linedata :
     x = np.linspace(0,np.pi,datasize)
-    ax.plot(x,-1.*dataset,'.',label='t='+i, color=cmap(int(i)/240.))
-ax.set_ylim([0.5,9])
+    ax.plot(x,-1.*dataset,'.',label='t='+i, color=cmap((int(i)-tbegin)/float(tend-tbegin)))
+#ax.set_ylim([-0.5,4.0])
 #ax.set_xlim([x[0],x[800]])
 ax.set_ylabel('Winding number')
 ax.set_xlabel(r'$\sim r$')

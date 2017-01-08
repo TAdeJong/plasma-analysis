@@ -14,7 +14,7 @@ def loadCudaStream(name):
     data=data.reshape(int(len(data)/4), 4)
     data=np.delete(data,3,1)
     return data
-clampVal = 1;
+clampVal = 100000;
 if (len(sys.argv) < 2) :
 	print("Usage: \n dataplot.py path_to_binfile [clamp value]")
 	sys.exit()
