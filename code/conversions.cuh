@@ -10,7 +10,7 @@ __device__ int signdiff(float a, float b);
 
 __global__ void reducePC(float4* g_linedata, float4* g_PCdata);
 
-__global__ void normal(float4* g_linedata, float4* g_normals, float4 g_origin, unsigned int steps);
+__global__ void normal(float4* g_linedata, float4* g_normals, float4* g_origin);
 
 //Sum all elements in g_linedata, storing the result in g_sumdata. Only works for powers of 2 datasets
 template <typename T> 
@@ -103,8 +103,8 @@ __global__ void reduceMax(T* g_linedata, T* g_sumdata) {
 	if(tid == 0) g_sumdata[blockIdx.x] = sdata[0];
 }
 
-__global__ void winding(float4* g_linedata ,float* g_alpha, float* g_beta, float4 d_origin, float r_t, 
-float4 d_normals, unsigned int steps);
+__global__ void winding(float4* g_linedata ,float* g_alpha, float* g_beta, float4* d_origin, float* r_t, 
+float4* d_normals, unsigned int steps);
 
 __global__ void divide(float* enumerator, float* denominator, float* output);
 __global__ void divide(float4* enumerator, float denominator, float4* output);
