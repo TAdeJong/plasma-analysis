@@ -27,9 +27,14 @@ data=data.reshape(datasize, datasize)
 data = np.minimum(data,1.0*clampVal*np.ones(data.shape))
 data = np.maximum(data,-1.0*clampVal*np.ones(data.shape))
 
-img = plt.imshow(data)
+fig = plt.figure()
+sizes = fig.get_size_inches()
+fig.set_size_inches(sizes[0]*2,sizes[1]*2)
+img = plt.imshow(data,
+        extent = [0,2.5,-1.25,1.25],
+        )
 #img.set_cmap('hot')
 plt.colorbar()
-plt.show()
-# plt.savefig(sys.argv[1].rsplit(".",1)[0]+'_fig.png')
+#plt.show()
+plt.savefig('tobiastestdingen_fig.png')
 

@@ -137,10 +137,10 @@ int main(int argc, char *argv[]) {
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	float4 BIGstartloc = make_float4(0,0,-1.7,0); //Location (in Smietcoords) to start the 
+	float4 BIGstartloc = make_float4(0,0,-1.25,0); //Location (in Smietcoords) to start the 
 //	integration, to be varied
 	float4 BIGxvec = {2.5,0,0,0};
-	float4 BIGyvec = {0,0,3,0};
+	float4 BIGyvec = {0,0,2.5,0};
 
 	//Allocate host arrays for the winding numbers,
 	float* h_windingdata;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMemcpy(&dt, d_lengths,sizeof(float),cudaMemcpyDeviceToHost));
 	dt/=(float)(dataCount/steps);
 	std::cout << "B_length mean = " << dt << std::endl;
-	dt = (1.0/32.0)/dt;
+	dt = (1.0/128.0)/dt;
 	cudaFree(d_lengths);
 
 	float cent_fac = 1/4.;

@@ -15,7 +15,7 @@ elif (len(sys.argv) > 2) :
 	fuz = float(sys.argv[2])
 binfile = sys.argv[1]
 lengthdata=np.fromfile(binfile+'_lengths.bin', dtype="float32")
-minLength = 300.0
+minLength = 200.0
 winddata=np.fromfile(binfile+'_windings.bin', dtype="float32")
 datasize = int(np.sqrt(lengthdata.shape[0]))
 lengthdata=lengthdata.reshape(datasize, datasize)
@@ -28,7 +28,8 @@ fractions = sorted([-1./3,-2./3,-1./5,-2./5,-3./5,-4./5,-1./4,-1./2,-3./4,-2./7,
 fig = plt.figure()
 cmap = plt.cm.get_cmap('nipy_spectral',8192)
 img = plt.imshow(masked.filled(0), 
-        clim=[-5,0], 
+        clim=[-1.05,-0.8], 
+        extent = [0,2.5,-1.25,1.25],
         cmap=cmap)
 #img.set_cmap('nipy_spectral')
 plt.colorbar(img,
@@ -38,4 +39,4 @@ plt.colorbar(img,
 # plt.savefig(sys.argv[1].rsplit(".",1)[0]+'_fig.png')
 sizes = fig.get_size_inches()
 fig.set_size_inches(sizes[0]*2,sizes[1]*2)
-plt.savefig('tobiastestimages.png')
+plt.savefig('tobiastestimages2.png')

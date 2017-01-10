@@ -14,7 +14,7 @@ elif (len(sys.argv) > 2) :
 	fuz = float(sys.argv[2])
 binfile = sys.argv[1]
 linedata = []
-minLength = 400.0
+minLength = 100.0
 tend = 290
 tbegin = 0
 for i in np.linspace(tbegin,tend,30) :
@@ -32,9 +32,9 @@ matplotlib.rcParams['legend.numpoints'] = 1
 cmap = matplotlib.cm.get_cmap('jet')
 #Wist je dat dit ook zonder forloop kan?
 for dataset,i in linedata :
-    x = np.linspace(0,np.pi,datasize)
+    x = np.linspace(0,2.5,datasize)
     ax.plot(x,-1.*dataset,'.',label='t='+i, color=cmap((int(i)-tbegin)/float(tend-tbegin)))
-#ax.set_ylim([-0.5,4.0])
+ax.set_ylim([0,5.0])
 #ax.set_xlim([x[0],x[800]])
 ax.set_ylabel('Winding number')
 ax.set_xlabel(r'$\sim r$')
