@@ -6,18 +6,21 @@ import sys
 
 import numpy.ma as ma
 
-fuz = 1/4.;
+matplotlib.rcParams['axes.labelsize'] = 'xx-large'
+matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['savefig.dpi'] = '300'
+
 if (len(sys.argv) < 2) :
 	print("Usage: \n dataplot.py path_to_binfile [clamp value]")
 	sys.exit()
-elif (len(sys.argv) > 2) :
-	fuz = float(sys.argv[2])
+
 binfile = sys.argv[1]
 linedata = []
-minLength = 100.0
+minLength = 150.0
 tend = 290
 tbegin = 0
-for i in np.linspace(tbegin,tend,30) :
+tscale = 1e-3
+for i in np.r_[[0,2,5,20],np.linspace(10,tend,15)] :
     lengthdata=np.fromfile(binfile+str(int(i))+'_lengths.bin', dtype="float32")
     winddata=np.fromfile(binfile+str(int(i))+'_windings.bin', dtype="float32")
     datasize = int(np.sqrt(lengthdata.shape[0]))
@@ -25,21 +28,31 @@ for i in np.linspace(tbegin,tend,30) :
     winddata=winddata.reshape(datasize, datasize)
     masked= ma.masked_where(lengthdata<minLength,winddata)
 #    masked = masked.filled(0)
-    linedata.append((masked[datasize/2,:],str(int(i))))
+    linedata.append((masked[datasize/2,:],str(float(i)*tscale)))
 fig = plt.figure()
-ax = fig.add_subplot(111)
-matplotlib.rcParams['legend.numpoints'] = 1
-cmap = matplotlib.cm.get_cmap('jet')
-#Wist je dat dit ook zonder forloop kan?
-for dataset,i in linedata :
-    x = np.linspace(0,2.5,datasize)
-    ax.plot(x,-1.*dataset,'.',label='t='+i, color=cmap((int(i)-tbegin)/float(tend-tbegin)))
-ax.set_ylim([0,5.0])
-#ax.set_xlim([x[0],x[800]])
-ax.set_ylabel('Winding number')
-ax.set_xlabel(r'$\sim r$')
-#plt.colorbar()
-plt.legend(loc=1)
 sizes = fig.get_size_inches()
 fig.set_size_inches(sizes[0]*2,sizes[1]*2)
+ax = fig.add_subplot(111)
+
+matplotlib.rcParams['legend.numpoints'] = 1
+norm = matplotlib.colors.Normalize(vmin=tbegin*tscale,vmax=tend*tscale)
+cmap = matplotlib.cm.get_cmap('viridis_r')
+s_m = matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm)
+s_m.set_array([])
+
+#Wist je dat dit ook zonder forloop kan? Al kan ik niet vinden hoe.
+for dataset,t in linedata :
+    x = np.linspace(0,2.5,datasize)
+#    ax.plot(x,-1.*dataset,'.',label='t='+i, color=cmap((int(i)-tbegin)/float(tend-tbegin)))
+    ax.plot(x,-1.*dataset,'.',label='t='+t, color=s_m.to_rgba(float(t)))
+ax.set_ylim([0,4.5])
+ax.set_ylabel(r'$\imath$')
+ax.set_xlabel(r'$x$')
+tlabels = np.array([0,100,200,tend])*tscale
+cbar = plt.colorbar(s_m, ticks = tlabels)
+cbar.ax.set_yticklabels([r'$t_\eta = 0$',r'$t_\eta = 0.1$',r'$t_\eta = 0.2$',r'$t_\eta = 0.29$'],
+        fontsize='large'
+        )
+cbar.ax.invert_yaxis()
+plt.tight_layout()
 plt.savefig('tobiastestdingen.png')

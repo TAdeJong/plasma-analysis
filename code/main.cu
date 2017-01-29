@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 	unsigned int steps = 32*blockSize;
 	float dt = 0;
 
-	dim3 BIGgridSize(32,32);
+	dim3 BIGgridSize(64,64);
 	dim3 gridSizeRK4(2,2);
 	dim3 blockSizeRK4(32,32); //gridSizeRK4*blockSizeRK4*steps should not exceed 2^26, to fit on 4GB VRAM
 	//gridsizeRK4*blockSizeRK4 should be at least 2*blockSize
@@ -137,10 +137,10 @@ int main(int argc, char *argv[]) {
 	int dataCount = gridSizeRK4.x*gridSizeRK4.y*blockSizeRK4.x*blockSizeRK4.y*steps;
 	int BIGnroflines = BIGgridSize.x*BIGgridSize.y*blockSizeRK4.x*blockSizeRK4.y;
 
-	float4 BIGstartloc = make_float4(0,0,-1.25,0); //Location (in Smietcoords) to start the 
+	float4 BIGstartloc = make_float4(0,0,-1,0); //Location (in Smietcoords) to start the 
 //	integration, to be varied
-	float4 BIGxvec = {2.5,0,0,0};
-	float4 BIGyvec = {0,0,2.5,0};
+	float4 BIGxvec = {2,0,0,0};
+	float4 BIGyvec = {0,0,2,0};
 
 	//Allocate host arrays for the winding numbers,
 	float* h_windingdata;
@@ -165,7 +165,14 @@ int main(int argc, char *argv[]) {
 	status = cudaMallocHost((void**)&h_lengths, BIGnroflines*sizeof(float));
 	if (status != cudaSuccess)
 		printf("Error allocating pinned host memory.\n");
-	RK4init<<<gridSizeRK4,blockSizeRK4,0>>>(d_lengths, BIGstartloc, BIGxvec, BIGyvec);
+	
+	float cent_fac = 1/4.;
+	float4 centreEdgeGuess = BIGstartloc+(BIGxvec+BIGyvec)*(1-cent_fac)/2.0;
+
+	float4 centrexvec = BIGxvec*cent_fac;
+	float4 centreyvec = BIGyvec*cent_fac;
+
+	RK4init<<<gridSizeRK4,blockSizeRK4,0>>>(d_lengths, centreEdgeGuess, centrexvec, centreyvec);
 	reduceSum<float><<<gridSizeRK4.x*gridSizeRK4.y/2,blockSizeRK4.x*blockSizeRK4.y,blockSizeRK4.x*blockSizeRK4.y*sizeof(float)>>>
 		(d_lengths, d_lengths);
 	reduceSum<float><<<1,gridSizeRK4.x*gridSizeRK4.y/4,gridSizeRK4.x*gridSizeRK4.y/4*sizeof(float)>>>
@@ -173,14 +180,8 @@ int main(int argc, char *argv[]) {
 	checkCudaErrors(cudaMemcpy(&dt, d_lengths,sizeof(float),cudaMemcpyDeviceToHost));
 	dt/=(float)(dataCount/steps);
 	std::cout << "B_length mean = " << dt << std::endl;
-	dt = (1.0/128.0)/dt;
+	dt = (1.0/32.0)/dt;
 	cudaFree(d_lengths);
-
-	float cent_fac = 1/4.;
-	float4 centreEdgeGuess = BIGstartloc+(BIGxvec+BIGyvec)*(1-cent_fac)/2.0;
-
-	float4 centrexvec = BIGxvec*cent_fac;
-	float4 centreyvec = BIGyvec*cent_fac;
 
 	RK4line<<<gridSizeRK4,blockSizeRK4,0>>>(d_lines, dt, steps, centreEdgeGuess, centrexvec, centreyvec);
 	reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4)>>>
@@ -296,7 +297,6 @@ int main(int argc, char *argv[]) {
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
-			//cudaDeviceSynchronize();	
 			cudaStreamSynchronize(RK4);//Wait for d_lines to be filled
 	
 			//Compute the length of each line (locally)
@@ -311,11 +311,6 @@ int main(int argc, char *argv[]) {
 
 			//Copy lengths from device to host
 			//Note: can be even more asynchronous and should copy to different parts of h_lengths.
-/*			checkCudaErrors(cudaMemcpyAsync(h_lengths, 
-						d_lengths, 
-						(dataCount/steps)*sizeof(float), 
-						cudaMemcpyDeviceToHost,
-						lengths));*/
 			checkCudaErrors(cudaMemcpy2DAsync(
 						&(h_lengths[globaloffset]),
 						BIGgridSize.x*blockSizeRK4.x*sizeof(float),
@@ -332,47 +327,6 @@ int main(int argc, char *argv[]) {
 			cudaStreamSynchronize(lengths);
 			//Make sure data from previous iteration is copied away to host
 			cudaStreamSynchronize(windings2);
-/*			//Add the coordinates of the streamlines coordinatewise (in order to calculate mean).
-			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4),windings>>>
-				(d_lines, d_origins);
-			reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4),windings>>>
-				(d_origins, d_origins);
-			divide<<<dataCount/(steps*blockSize),blockSize,0,windings>>>
-				(d_origins,(float)steps, d_origins);//not size-scalable!!!
-
-
-		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-
-
-		//Calculate the normals.
-			normal<<<dataCount/blockSize,blockSize,0,windings>>>
-				(d_lines, d_normals, d_origins, steps);
-			reduceSum<float4><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float4),windings>>>
-				(d_normals, d_normals);
-			reduceSum<float4><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float4),windings>>>
-				(d_normals, d_normals);
-			divide<<<dataCount/(steps*blockSize),blockSize,0,windings>>>
-				(d_normals,(float)steps, d_normals);//not size-scalable!!!
-
-
-//			cudaDeviceSynchronize();	
-		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
-
-
-
-			//Compute the distance from the origin in the xy plane of each point
-			rxy<<<dataCount/blockSize,blockSize,0,windings>>>
-				(d_lines, d_radii, (float)steps, d_origins, d_normals, steps);
-
-			//Average these distances to find the torus radius
-			reduceSum<float><<<dataCount/(2*blockSize),blockSize,blockSize*sizeof(float),windings>>>
-				(d_radii,d_radii);
-			reduceSum<float><<<dataCount/steps,steps/(4*blockSize),steps/(4*blockSize)*sizeof(float),windings>>>
-				(d_radii,d_radii);
-
-
-*/
-//			cudaDeviceSynchronize();	
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 			winding<<<dataCount/blockSize,blockSize,0,windings>>>(d_lines, d_alpha, d_beta, 
 d_origin, d_radius, d_normal, steps);
@@ -433,7 +387,7 @@ d_origin, d_radius, d_normal, steps);
 //Write some data
 //	float4write("../datadir/linedata.bin", BIGdataCount, h_lines);
 	name = name.substr(name.rfind("/")+1,name.rfind(".")-name.rfind("/")-1);
-	const std::string prefix = "../datadir/shafranov3/";
+	const std::string prefix = "../datadir/shafranov3/2k";
 	std::string suffix = "_windings.bin";
 	std::string path = prefix+name+suffix;
 	floatwrite(path.c_str(), BIGnroflines, h_windingdata);
