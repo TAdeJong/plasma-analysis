@@ -13,8 +13,12 @@ def loadCudaStream(name):
     data=data.reshape(int(len(data)/4), 4)
     data=np.delete(data,3,1)
     return data
-#
-data=np.fromfile("../datadir/data.bin", dtype="float32")
+if (len(sys.argv) < 2) :
+	print("Usage: \n lineplot.py path_to_lines-binfile")
+	sys.exit()
+binfile = sys.argv[1]
+
+data=np.fromfile(binfile, dtype="float32")
 data=data.reshape(64, int(len(data)/(4*64)) , 4)
 fig = plt.figure()
 ax = fig.add_subplot(111,projection='3d')
