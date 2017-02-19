@@ -7,8 +7,12 @@ import sys
 import numpy.ma as ma
 
 matplotlib.rcParams['font.family'] = 'serif'
-matplotlib.rcParams['axes.labelsize'] = 'xx-large'
+matplotlib.rcParams['axes.labelsize'] = '25'
 matplotlib.rcParams['savefig.dpi'] = '300'
+matplotlib.rcParams['xtick.labelsize'] = '25'
+matplotlib.rcParams['ytick.labelsize'] = '25'
+
+
 
 if (len(sys.argv) < 2) :
 	print("Usage: \n dataplot.py path_to_binfile [clamp value]")
@@ -50,8 +54,10 @@ for t in times :
     ax.set_ylabel('$z$')
     ax.set_xlabel('$x$')
     cbar = plt.colorbar(img)
-    cbar.ax.set_title(r'$\imath$')
-    plt.title(r'$t_\eta = '+"{0:.2f}".format(t*1e-3)+'$')
+    cbar.ax.set_title(r'$\imath$', size=30)
+    cbar.ax.tick_params(labelsize=20)
+    if t>0: plt.locator_params(axis='x', nbins=3)
+    plt.title(r'$t_\eta = '+"{0:.2f}".format(t*1e-3)+'$', size = 30, y=1.05)
     plt.tight_layout()
 #cbar.ax.set_yticklabels([ '$2/3$', r'$5/8$',r'$3/5$',r'$5/8$','$0.62$'])
     plt.savefig('./animation'+str(t)+'_fig.png')

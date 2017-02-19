@@ -6,9 +6,11 @@ import sys
 
 import numpy.ma as ma
 
-matplotlib.rcParams['axes.labelsize'] = 'xx-large'
+matplotlib.rcParams['axes.labelsize'] = '40'
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['savefig.dpi'] = '300'
+matplotlib.rcParams['xtick.labelsize'] = 30 
+matplotlib.rcParams['ytick.labelsize'] = 30 
 
 if (len(sys.argv) < 2) :
 	print("Usage: \n dataplot.py path_to_binfile [clamp value]")
@@ -51,7 +53,7 @@ ax.set_xlabel(r'$x$')
 tlabels = np.array([0,100,200,tend])*tscale
 cbar = plt.colorbar(s_m, ticks = tlabels)
 cbar.ax.set_yticklabels([r'$t_\eta = 0$',r'$t_\eta = 0.1$',r'$t_\eta = 0.2$',r'$t_\eta = 0.29$'],
-        fontsize='large'
+        fontsize='30'
         )
 cbar.ax.invert_yaxis()
 plt.tight_layout()
