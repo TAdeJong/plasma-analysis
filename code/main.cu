@@ -149,8 +149,11 @@ int main(int argc, char *argv[]) {
 		printf("Error allocating pinned host memory.\n");
 	
 	//Allocate space on device & host to store integration output
+	const bool WRITELINES = true;
 	checkCudaErrors(cudaMalloc(&d_lines, dataCount*sizeof(float4)));
-	h_lines = (float4*) malloc(dataCount*sizeof(float4));
+	if (WRITELINES == true) {
+		h_lines = (float4*) malloc(dataCount*sizeof(float4));
+	}
 
 	//Allocate space to store origin data
 	float4 *d_origins;
@@ -293,7 +296,16 @@ int main(int argc, char *argv[]) {
 			RK4line<<<gridSizeRK4,blockSizeRK4,0,RK4>>>(d_lines, dt, steps, startloc, xvec, yvec);
 
 			//Copy data from device to host
-//			checkCudaErrors(cudaMemcpy(h_lines, d_lines, dataCount*sizeof(float4), cudaMemcpyDeviceToHost));
+			if(yindex == BIGgridSize.y/2 && xindex == BIGgridSize.x/2 && WRITELINES == true) {
+				checkCudaErrors(cudaMemcpyAsync(
+						h_lines,
+						d_lines,
+						dataCount*sizeof(float),
+						cudaMemcpyDeviceToHost,
+						RK4
+						));
+				cudaStreamSynchronize(RK4);
+			}
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 
@@ -369,17 +381,14 @@ d_origin, d_radius, d_normal, steps);
 
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
 		   
-			//Free host pointers
-//			free(h_origins);
-			free(h_lines);
 
-			//Free the remaining device pointers
-			cudaFree(d_alpha);
-			cudaFree(d_beta);
-			cudaFree(d_radius);
-			cudaFree(d_lengths);
-			cudaFree(d_origin);
-			cudaFree(d_lines);
+	//Free the remaining device pointers
+	cudaFree(d_alpha);
+	cudaFree(d_beta);
+	cudaFree(d_radius);
+	cudaFree(d_lengths);
+	cudaFree(d_origin);
+	cudaFree(d_lines);
 
 //Print some data to screen
 	//	dim3 printtest(16,16);
@@ -394,11 +403,18 @@ d_origin, d_radius, d_normal, steps);
 	suffix = "_lengths.bin";
 	path = prefix+name+suffix;
 	floatwrite(path.c_str(), BIGnroflines, h_lengths);
-
+	
+	if(WRITELINES) {
+		suffix = "_lines.bin";
+		path = prefix+name+suffix;
+		float4write(path.c_str(), dataCount, h_lines);
+		free(h_lines);
+	}
 	status = cudaStreamDestroy(RK4);
 	status = cudaStreamDestroy(windings);
 	status = cudaStreamDestroy(lengths);
 
+	//Free host pointers
 
 	free(hostvfield[0][0]);
 	free(hostvfield[0]);
