@@ -27,6 +27,9 @@
 *.out
 *.app
 
+# Any images that and up in code
+code/*.png
+
 #machinedependent includedirlink
 code/cudasamples
 code/main
