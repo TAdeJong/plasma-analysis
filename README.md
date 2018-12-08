@@ -1,4 +1,8 @@
-# plasma-analysis
+# Plasma-analysis
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2069945.svg)](https://doi.org/10.5281/zenodo.2069945)
+
+
 Repository containing code used to calculate field lines by massively parallel numerical integration using Runge-Kutta methods implemented in CUDA. And extract topological properties from the field line traces.
 
 Also contains some Python code to plot resulting data.
